@@ -1,0 +1,78 @@
+= Sharp Edges: Troubleshooting and Day-2 Operations
+:navtitle: Troubleshooting
+:toc: macro
+:role: Operational Guide
+:audience: Platform Engineers & SREs
+:description: Common failure modes and fixes for MaaS deployments on OpenShift AI 3.x.
+
+[.lead]
+*Deployment is easy. Day-2 operations are where the battle is won.*
+
+Once your LLMInferenceService is deployed, you will encounter issues: pods not starting, routes not resolving, or slow TTFT. This section summarizes the most common "sharp edges" and how to address them.
+
+== 1. Inference Pod Stuck in Pending
+
+**Symptom:** The inference pod never reaches **Running**; it stays **Pending**.
+
+* **Cause:** Usually **insufficient GPU** (or no GPU node available). The pod requests `nvidia.com/gpu: 1` but no node can satisfy it.
+* **Check:** `oc describe pod <inference-pod> -n <namespace>` and look at **Events**. Look for "0/X nodes are available: insufficient nvidia.com/gpu."
+* **Fix:** Ensure GPU nodes are present and the NVIDIA GPU Operator (or equivalent) is installed so that `nvidia.com/gpu` is advertised. Or reduce/remove GPU request for a CPU-only test (if the runtime supports it).
+
+== 2. Model Load or Image Pull Failures
+
+**Symptom:** Pod is **CrashLoopBackOff** or **Error**; logs show model load failure or image pull errors.
+
+* **Cause:** Model URI unreachable (e.g., Hugging Face timeout, S3 credentials missing) or image pull authentication failure.
+* **Check:** `oc logs <inference-pod> -n <namespace>` and look for "Connection refused," "401 Unauthorized," or "model not found."
+* **Fix:** Verify the `model.uri` (e.g., `hf://...` or `s3://...`) is correct and that the pod has network access and any required Data Connection or image pull secret attached.
+
+== 3. Route or Gateway Not Reachable
+
+**Symptom:** `curl` to the inference URL times out or returns 404/503.
+
+* **Cause:** HTTPRoute or OpenShift Route not created, or Gateway not configured; or DNS/ingress not pointing to the right backend.
+* **Check:** `oc get route -n <namespace>`, `oc get httproute -n <namespace>`, and `oc get gateway -A`. Ensure the inference service has a valid **status.url** in KServe.
+* **Fix:** Confirm KServe (or the operator) is configured to create Routes/HTTPRoutes. Create or fix the Route/HTTPRoute and Gateway so that the inference service URL is reachable from your client.
+
+== 4. Slow or Unstable TTFT
+
+**Symptom:** Time to first token is high or highly variable.
+
+* **Cause:** Cold start (first request after scale-up), overloaded GPU, or insufficient replicas.
+* **Check:** Use Prometheus/Grafana or OpenShift Observability to inspect `vllm_llmd_time_to_first_token_seconds` (or the equivalent metric for your runtime).
+* **Fix:** Increase replicas or use KEDA to scale on queue depth; consider model caching (e.g., keeping a warm replica); ensure GPU is not oversubscribed.
+
+== 5. Rate Limiting or Auth Rejections (Kuadrant/Authorino)
+
+**Symptom:** Requests return 429 (Too Many Requests) or 401/403 (Unauthorized/Forbidden).
+
+* **Cause:** Kuadrant rate limits or Authorino (or other auth) rejecting the request.
+* **Check:** Review Kuadrant/Authorino policy and logs; confirm the client is sending the expected API key or token.
+* **Fix:** Adjust rate limits or auth policy; ensure the client uses the correct credentials and headers.
+
+== Quick Reference Commands
+
+[cols="1,2", options="header"]
+|===
+| Goal | Command
+
+| List inference services
+| `oc get llminferenceservice -n <namespace>`
+
+| Pod status and events
+| `oc describe pod -n <namespace> -l serving.kserve.io/inferenceservice=<name>`
+
+| Inference pod logs
+| `oc logs -n <namespace> -l serving.kserve.io/inferenceservice=<name> -f`
+
+| Get service URL
+| `oc get inferenceservice <name> -n <namespace> -o jsonpath='{.status.url}'`
+
+| Check GPU nodes
+| `oc get nodes -l nvidia.com/gpu.present=true`
+|===
+
+---
+*You have completed the operational playbook. Finish with the Knowledge Check (Quiz).*
+
+xref:quiz.adoc[Go to Quiz]

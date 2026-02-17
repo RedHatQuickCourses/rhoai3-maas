@@ -1,173 +1,140 @@
-= Lab: Deploy Your First MaaS Endpoint
-:navtitle: Hands-On Lab
+= Day-2 Operations: Keeping the Factory Running
+:navtitle: Operations & Troubleshooting
 :toc: macro
-:role: Hands-On Lab
-:audience: Developers & Platform Engineers
-:description: Install OpenShift AI 3.x, enable KServe and Dashboard, deploy an LLMInferenceService with vLLM, and test with curl.
+:role: SRE & Platform Operations
+:audience: Site Reliability Engineers, Platform Admins
+:description: How to monitor, debug, and tune the Red Hat OpenShift AI 3.x MaaS stack when things go wrong.
 
 [.lead]
-*Theory is over. It is time to deploy.*
+*Building the factory is Step 1. Keeping it running is the rest of your career.*
 
-In this lab, you will stand up a minimal MaaS-style endpoint on Red Hat OpenShift AI 3.x: install the operator, enable the required components, deploy an LLM inference service using vLLM, and verify it with an OpenAI-compatible request.
+In a distributed MaaS environment, a "broken" service isn't just a crashing pod. It could be a misconfigured Gateway route, an aggressive rate limit, or a saturated GPU.
 
-[IMPORTANT]
-.Prerequisites
-====
-* An **OpenShift cluster** (4.x) with sufficient resources for the OpenShift AI operator and at least one GPU node (or a node that can run the chosen model for testing).
-* **Cluster-admin** or equivalent permissions to install operators and create resources in the target namespace.
-* The **`oc`** CLI installed and authenticated (`oc login`).
-* **curl** (or similar) for testing the API.
-====
+This guide covers the critical observability signals and the three most common failure scenarios in the RHOAI 3.x stack.
 
-== Step 1: Install the OpenShift AI Operator
+== 1. The Dashboard: What to Watch
 
-Install the Red Hat OpenShift AI operator from the **fast-3.x** (or equivalent) channel.
+Before debugging, you need visibility. Do not rely on user complaints.
 
-. **From the OpenShift Console (Administrator view):**
-+
-1. Go to **Operators** → **OperatorHub**.
-2. Search for **Red Hat OpenShift AI** or **OpenShift AI**.
-3. Click **Install**.
-4. Choose **Channel:** `fast-3.x` (or the 3.x channel recommended for your release).
-5. Choose **Installation mode:** All namespaces (or a specific namespace if your process requires it).
-6. Click **Install** and wait for the operator to be **Installed** and **Succeeded**.
+=== Key Metrics (Prometheus / Console)
 
-. **Verify:**
-+
+[cols="1,2,2", options="header"]
+|===
+| Metric | What it tells you | Alert Threshold
+
+| **TTFT (Time To First Token)**
+| The latency user perceives. High TTFT means the system is queuing requests or the GPU is overloaded.
+| > 200ms (for interactive chat)
+
+| **Token Generation Rate**
+| The throughput of the factory. Sudden drops indicate upstream issues or model crashes.
+| < 10 tokens/sec (per stream)
+
+| **Gateway 4xx/5xx Rate**
+| **429:** Kuadrant is blocking traffic (Good/Policy). +
+**404:** Route misconfiguration (Bad). +
+**503:** vLLM backend is down or scaling from zero (Bad).
+| > 1% (excluding valid 429s)
+
+| **GPU Memory Utilization**
+| How full the KV Cache is. If this hits 100%, vLLM may swap to CPU or reject requests.
+| > 95% sustained
+|===
+
+== 2. Troubleshooting Scenario A: "The Broken Door" (404 Not Found)
+
+**Symptom:** You `curl` the endpoint and get `404 Not Found`.
+**The Component:** Gateway API.
+
+In RHOAI 3.x, the Service Mesh/Gateway is strict. A 404 usually means the **HTTPRoute** is not correctly attached to the **Gateway**.
+
+* **Diagnosis:**
 [source,bash]
 ----
-oc get csv -A | grep -i openshift.ai
-# or
-oc get csv -A | grep -i red-hat-openShift-ai
+# 1. Check if the HTTPRoute is accepted
+oc describe httproute granite-route -n maas-production
 ----
-+
-The CSV should show **Succeeded**.
+* **Look for:** `Conditions: Accepted = False`.
+* **Common Fixes:**
+** **Hostname Mismatch:** Does the `curl` header (`-H "Host: api.maas.example.com"`) match the `hostnames` in the YAML exactly?
+** **Gateway Namespace:** Did you reference the Gateway in the `istio-system` (or correct) namespace?
+** **Port Mismatch:** Does the `backendRef` point to port `8080` (vLLM default)?
 
-== Step 2: Enable KServe and the Dashboard
+== 3. Troubleshooting Scenario B: "The Stop Sign" (429 Too Many Requests)
 
-After the operator is installed, enable the components required for inference and the dashboard.
+**Symptom:** Users report their requests are being rejected.
+**The Component:** Kuadrant (Rate Limiting).
 
-. **Create or edit the Data Science Cluster instance (DSCI / default config):**
-+
-Depending on your OpenShift AI version, you may need to create a `DataScienceCluster` or similar custom resource and set:
-  * **KServe:** enabled (required for InferenceService / LLMInferenceService).
-  * **Dashboard:** enabled (optional but useful for UI-based configuration and Model Catalog).
+This is usually "working as designed," but you need to verify *why*.
 
-. **From the OpenShift AI Dashboard (if enabled):**
-+
-1. Log in to the **OpenShift AI** dashboard (link provided by the operator or from the OpenShift console).
-2. Navigate to **Settings** or **Cluster settings** and confirm **KServe** is enabled and the **Dashboard** is available.
-
-. **Verify KServe:**
-+
+* **Diagnosis:**
 [source,bash]
 ----
-oc get pods -n redhat-ods-applications | grep -i kserve
-# or the namespace where KServe is deployed
+# 1. Check the RateLimitPolicy status
+oc describe ratelimitpolicy granite-protection -n maas-production
 ----
-+
-Pods related to KServe (e.g., controller, agent) should be **Running**.
+* **Check the Headers:** Run `curl -v`. Kuadrant injects headers telling you the limit.
+** `x-ratelimit-remaining: 0`
+** `x-ratelimit-reset: 5`
+* **Fix:**
+** If legitimate traffic is blocked, edit the `RateLimitPolicy` YAML to increase the `limits` bucket.
+** **Pro Tip:** In RHOAI 3.x, ensure you are counting **Tokens**, not just Requests, if you configured specific descriptors.
 
-== Step 3: Deploy an LLMInferenceService with vLLM
+== 4. Troubleshooting Scenario C: "The Silent Queue" (High Latency / Pending Pods)
 
-Create an **LLMInferenceService** that uses the vLLM runtime. This is the core "model as a service" resource.
+**Symptom:** Requests succeed (200 OK) but take 10+ seconds to start (High TTFT).
+**The Component:** KEDA & vLLM.
 
-. **Create a project (if needed):**
-+
+This means the "Queue" is full, and KEDA isn't scaling fast enough.
+
+* **Diagnosis:**
 [source,bash]
 ----
-oc new-project my-maas-lab
+# 1. Check the HorizontalPodAutoscaler (HPA) generated by KEDA
+oc get hpa -n maas-production
 ----
+* **Look for:** `TARGETs` showing `10/1` (Current/Target). If the current value is high, KEDA is trying to scale.
+* **Why isn't it scaling?**
+[source,bash]
+----
+oc get pods -n maas-production
+# Status: Pending?
+----
+* **Root Cause:** **GPU Starvation.** You have hit the physical limits of your cluster. HPA wants 5 pods, but you only have GPUs for 2.
+* **Fix:**
+** **Short Term:** Reduce `minReplicas` or `maxReplicas`.
+** **Long Term:** Purchase more nodes or enable **MIG (Multi-Instance GPU)** to slice existing cards into smaller units.
 
-. **Create the LLMInferenceService:**
-+
-Save the following as `llm-inference-service.yaml` (adjust namespace, model URI, and hardware profile to match your environment):
+== 5. Tuning vLLM for Performance
+
+If your architecture is correct but the model is just *slow*, tune the engine.
 
 [source,yaml]
 ----
-apiVersion: serving.kserve.io/v1alpha1
-kind: LLMInferenceService
-metadata:
-  name: maas-demo
-  namespace: my-maas-lab
-  annotations:
-    opendatahub.io/model-type: generative
-spec:
-  replicas: 1
-  model:
-    uri: "hf://Qwen/Qwen3-0.6B"
-    name: "Qwen3-0.6B"
-  template:
-    spec:
-      containers:
-        - name: kserve-container
-          resources:
-            limits:
-              nvidia.com/gpu: "1"
-            requests:
-              nvidia.com/gpu: "1"
-          env:
-            - name: VLLM_ADDITIONAL_ARGS
-              value: "--max-model-len=4096"
-----
-+
-Apply it:
-
-[source,bash]
-----
-oc apply -f llm-inference-service.yaml
+# Inside your ServingRuntime YAML
+args:
+  - "--gpu-memory-utilization=0.95" # Increase KV Cache space
+  - "--max-model-len=4096"          # Cap context to save memory
+  - "--enforce-eager"               # Use for debugging CUDA graph issues
 ----
 
-. **Wait for the service to be ready:**
-+
-[source,bash]
-----
-oc get llminferenceservice -n my-maas-lab -w
-# Wait until READY is True
-----
-+
-The first time, the image and model may take several minutes to pull and load.
+[TIP]
+.The "OOM" Trap
+====
+If vLLM crashes with `OOMKilled`, it is not usually the *model weights*; it is the **KV Cache** growing too large during long conversations. Decrease `--gpu-memory-utilization` to reserve a buffer for overhead.
+====
 
-== Step 4: Get the Inference URL and Test with curl
+== Conclusion: You Are Ready
 
-. **Obtain the inference URL:**
-+
-Depending on your setup, the URL may come from:
-  * The **OpenShift AI Dashboard** (Model Serving → your service → endpoint).
-  * Or an **HTTPRoute** / **Route** created by KServe:
+You have completed the **Red Hat OpenShift AI 3.x MaaS Learning Journey**.
 
-[source,bash]
-----
-oc get route -n my-maas-lab
-# or
-oc get httproute -n my-maas-lab
-oc get inferenceservice maas-demo -n my-maas-lab -o jsonpath='{.status.url}'
-----
+* You understand the **Strategy** (MaaS vs. Dedicated).
+* You speak the **Taxonomy** (vLLM, Gateway, Kuadrant).
+* You have **Built the Factory** (Lab).
+* You can **Fix the Machinery** (Troubleshooting).
 
-. **Send an OpenAI-compatible request:**
-+
-[source,bash]
-----
-export INFERENCE_URL="<your-inference-url>"   # e.g. https://maas-demo-my-maas-lab.apps.cluster.example.com
+**Next Steps:**
+Go to the **Red Hat Hybrid Cloud Console** and start your pilot.
 
-curl -k -X POST "$INFERENCE_URL/v1/chat/completions" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "Qwen3-0.6B",
-    "messages": [
-      {"role": "user", "content": "Say hello in one sentence."}
-    ],
-    "max_tokens": 50
-  }'
-----
-+
-*Success:* You should receive a JSON response with `choices[].message.content` containing the model's reply.
-
-== Step 5: Verify End-to-End
-
-* **Dashboard:** In the OpenShift AI Dashboard, open **Model Serving** (or equivalent) and confirm `maas-demo` is **Started** or **Ready**.
-* **Pods:** `oc get pods -n my-maas-lab` should show the inference pod **Running**.
-* **Logs:** If something fails, check `oc logs -n my-maas-lab -l serving.kserve.io/inferenceservice=maas-demo`.
-
----
-*You have deployed your first MaaS-style endpoint. Next: review Sharp Edges (Troubleshooting) and take the Knowledge Check.*
+[.text-center]
+**[End of Course]**

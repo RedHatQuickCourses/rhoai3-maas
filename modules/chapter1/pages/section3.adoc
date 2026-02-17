@@ -1,88 +1,204 @@
-= The MaaS Stack: Architecture Deep Dive
-:navtitle: Architecture Deep Dive
+= Lab: Build Your MaaS Factory
+:navtitle: Hands-On Lab
 :toc: macro
-:role: Technical Deep Dive
-:audience: Platform Engineers & Architects
-:description: The full MaaS stack—hardware, vLLM, Gateway API, auth—plus scaling (KEDA) and observability (TTFT).
+:role: Developer & Platform Engineer
+:audience: Implementation Teams
+:description: A step-by-step guide to deploying a model with vLLM, exposing it via Kubernetes Gateway API, and enforcing rate limits with Kuadrant.
 
 [.lead]
-*From GPU to API: understanding the machinery under the hood.*
+*Theory is over. It is time to build.*
 
-To run MaaS at scale, you need a clear mental model of the stack. This section walks through the layers: hardware, inference engine, routing, and auth—and how scaling and observability fit in.
+In this lab, you will act as the Platform Engineer. You will not just "run a container." You will build a governed manufacturing line.
 
-== The Stack (Bottom to Top)
+You will deploy a Lightweight LLM (Granite-7B or similar), expose it through the new **Gateway API**, and apply a **Token-Aware Rate Limit** to prevent cost overruns.
 
-=== 1. Hardware Layer (GPUs, MIG)
+[IMPORTANT]
+.Prerequisites
+====
+* **OpenShift Container Platform 4.16+**
+* **Red Hat OpenShift AI Operator** (Channel `fast-3.x`) installed.
+* **Red Hat OpenShift Service Mesh** (for Gateway API implementation) installed.
+* **Kuadrant Operator** installed (for Rate Limiting).
+* Access to a namespace with **GPU quota** (at least 1 NVIDIA A10G/A100 or equivalent).
+* The `oc` CLI tool logged in.
+====
 
-At the foundation are the physical accelerators. For production MaaS:
+== Step 1: Initialize the Workspace
 
-* **GPU types:** NVIDIA A100, H100, or similar data-center GPUs are typical. Consumer-grade GPUs are not supported for production serving.
-* **MIG (Multi-Instance GPU):** Where supported (e.g., A100), MIG allows you to partition a single GPU into isolated instances. This supports **GPU slicing**—multiple smaller workloads sharing one physical card with guaranteed isolation.
+First, create a project for your MaaS utility.
 
-=== 2. Inference Engine (vLLM)
+[source,bash]
+----
+oc new-project maas-production
+----
 
-vLLM runs in pods that request GPU resources. It:
+== Step 2: Deploy the Inference Engine (vLLM)
 
-* Loads model weights (from OCI images, S3, or other configured sources).
-* Serves OpenAI-compatible endpoints (e.g., `/v1/chat/completions`).
-* Uses PagedAttention and continuous batching for high throughput.
+We will define a `ServingRuntime` that tells OpenShift AI how to run the vLLM engine, and an `InferenceService` to deploy the specific model.
 
-In the **MaaS/distributed** path, **llm-d** sits above vLLM to schedule and route requests (e.g., cache-aware routing, prefill/decode disaggregation).
+. **Create the ServingRuntime (vllm-runtime.yaml):**
++
+[source,yaml]
+----
+apiVersion: serving.kserve.io/v1alpha1
+kind: ServingRuntime
+metadata:
+  name: vllm-runtime
+  namespace: maas-production
+spec:
+  supportedModelFormats:
+    - name: vLLM
+      version: "1"
+      autoSelect: true
+  multiModel: false
+  containers:
+    - name: kserve-container
+      image: quay.io/modh/vllm:stable
+      command: ["python3", "-m", "vllm.entrypoints.openai.api_server"]
+      args:
+        - "--model=/mnt/models"
+        - "--port=8080"
+        - "--gpu-memory-utilization=0.9"
+      resources:
+        requests:
+          cpu: "4"
+          memory: "16Gi"
+          nvidia.com/gpu: "1"
+        limits:
+          nvidia.com/gpu: "1"
+----
 
-=== 3. Routing Layer (Gateway API)
+. **Deploy the Model (granite-service.yaml):**
++
+[source,yaml]
+----
+apiVersion: serving.kserve.io/v1beta1
+kind: InferenceService
+metadata:
+  name: granite-7b
+  namespace: maas-production
+spec:
+  predictor:
+    model:
+      modelFormat:
+        name: vLLM
+      runtime: vllm-runtime
+      storage:
+        key: aws-connection-secret # Assuming you have configured S3 storage
+        path: models/granite-7b-lab
+----
 
-The **Gateway API** is the "front door" for inference traffic. It:
+[source,bash]
+----
+oc apply -f vllm-runtime.yaml
+oc apply -f granite-service.yaml
+----
 
-* Receives HTTP/HTTPS requests from clients.
-* Routes them to the correct backend (vLLM service) based on host, path, or other rules.
-* Replaces or complements legacy OpenShift Routes with a more flexible, policy-aware model.
+*Checkpoint:* Run `oc get pods` and wait until the `granite-7b-predictor` pod is **Running**.
 
-Traffic flows: **Client → Gateway API → (policy/Kuadrant) → vLLM (or llm-d proxy) → vLLM pod.**
+== Step 3: Configure the Front Door (Gateway API)
 
-=== 4. Auth & Governance (Authorino, Kuadrant)
+In RHOAI 3.x, we use the Gateway API to route traffic. This separates the "Infrastructure" from the "Model."
 
-Before (or at) the Gateway, **Kuadrant** and optionally **Authorino** enforce:
+. **Create the HTTPRoute (model-route.yaml):**
++
+[source,yaml]
+----
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: HTTPRoute
+metadata:
+  name: granite-route
+  namespace: maas-production
+spec:
+  parentRefs:
+    - name: maas-gateway
+      namespace: istio-system # or where your Gateway is defined
+  hostnames:
+    - "api.maas.example.com"
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /v1/completions
+      backendRefs:
+        - name: granite-7b-predictor
+          port: 8080
+----
 
-* **Rate limiting:** So one consumer cannot starve others.
-* **Authentication:** API keys, OIDC, or other mechanisms.
-* **Authorization:** Who can call which model or endpoint.
+[source,bash]
+----
+oc apply -f model-route.yaml
+----
 
-This gives you **Zero Trust** and guaranteed SLOs without "noisy neighbors" overwhelming the system.
+== Step 4: Apply Governance (Kuadrant)
 
-== Scaling: Beyond CPU (KEDA)
+Now, we solve the "Why Buy" challenge. We will apply a policy that limits users to **5 requests every 10 seconds** to prevent abuse.
 
-MaaS scaling should be **event-driven**, not only CPU-based.
+. **Create the RateLimitPolicy (safety-limit.yaml):**
++
+[source,yaml]
+----
+apiVersion: kuadrant.io/v1beta2
+kind: RateLimitPolicy
+metadata:
+  name: granite-protection
+  namespace: maas-production
+spec:
+  targetRef:
+    group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: granite-route
+  limits:
+    "basic-tier":
+      rates:
+        - limit: 5
+          window: 10s
+----
 
-* **KEDA** (Kubernetes Event-Driven Autoscaling) can scale inference workloads based on:
-  * Queue depth (e.g., number of requests waiting).
-  * Token count or other custom metrics exposed by vLLM/llm-d.
-* **Why it matters:** Scaling on CPU alone often lags real demand. Scaling on queue depth or token throughput keeps latency stable under bursty traffic.
+[source,bash]
+----
+oc apply -f safety-limit.yaml
+----
 
-== Observability: Time to First Token (TTFT)
+== Step 5: Verification & Stress Test
 
-The most user-visible metric for inference is **Time to First Token (TTFT)**.
+Let's prove the factory works and the guards are active.
 
-* **What it is:** Latency from the moment the request is sent until the first token of the response is streamed.
-* **Why it matters:** Users perceive responsiveness by TTFT. Guaranteeing SLOs means tracking TTFT (e.g., p95, p99) and alerting when it degrades.
-* **Where to get it:** Prometheus metrics from vLLM/llm-d (e.g., `vllm_llmd_time_to_first_token_seconds`) and dashboards (Grafana, OpenShift Observability).
+. **Test 1: A Valid Request (The "Happy Path")**
++
+[source,bash]
+----
+curl -X POST "http://api.maas.example.com/v1/completions" \
+     -H "Content-Type: application/json" \
+     -d '{"model": "granite-7b", "prompt": "Define industrialized AI.", "max_tokens": 50}'
+----
++
+*Result:* You should receive a JSON response with the definition.
 
-== Summary Diagram (Conceptual)
+. **Test 2: The Stress Test (The "Governance Path")**
++
+Run this loop to simulate a "noisy neighbor" or a runaway script:
++
+[source,bash]
+----
+for i in {1..20}; do
+  curl -o /dev/null -s -w "%{http_code}\n" -X POST "http://api.maas.example.com/v1/completions" \
+  -H "Content-Type: application/json" \
+  -d '{"model": "granite-7b", "prompt": "spam", "max_tokens": 10}'
+done
+----
 
-[literal]
-  Clients
-     |
-     v
-  Gateway API  <-- Kuadrant (rate limit, policy)
-     |
-     v
-  llm-d (scheduler) [when using MaaS/distributed path]
-     |
-     v
-  vLLM pods (inference engine)
-     |
-     v
-  GPUs (MIG / time-slicing where applicable)
-[/literal]
+*Result:*
+You will see `200` (Success) for the first 5 requests.
+Then, you will see `429` (Too Many Requests) for the rest.
 
----
-*Now that you understand the architecture, proceed to the Lab to install, configure, and deploy.*
+**Congratulations.** You have successfully deployed a MaaS architecture that is:
+1.  **Efficient** (Shared vLLM Runtime).
+2.  **Accessible** (Standard Gateway API).
+3.  **Governed** (Kuadrant Rate Limiting).
+
+[.text-center]
+*You have built the factory. Now, keep it running.* +
+link:troubleshooting.html[**Next: Day-2 Operations & Troubleshooting >**]
+
+```

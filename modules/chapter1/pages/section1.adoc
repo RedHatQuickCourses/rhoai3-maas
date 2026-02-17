@@ -1,48 +1,95 @@
-= Choosing Your Path: Single-Model vs. MaaS (Well-Lit Paths)
-:navtitle: Strategy Guide
+= Strategy & Taxonomy: Defining Your Path to Production
+:navtitle: Strategy & Taxonomy
 :toc: macro
-:role: Strategic Guide
-:audience: Architects & Platform Engineers
-:description: Compare deployment options—KServe/TGIS for dedicated workloads vs. vLLM + llm-d for MaaS and high concurrency.
+:role: Architect & Technical Lead
+:audience: Cloud Architects, ML Engineers, Platform Engineers
+:description: Define the strategic deployment models in Red Hat OpenShift AI 3.x and master the essential vocabulary of the new MaaS stack.
 
 [.lead]
-*One size does not fit all. Pick the path that matches your concurrency and governance needs.*
+Before rushing to deploy a container, you must choose your architectural strategy.
 
-Not every inference workload needs the same architecture. A single, heavy model serving one high-value application is different from a shared API serving many teams and applications. Red Hat OpenShift AI 3.x supports both. Your job is to choose the right path.
+In Red Hat OpenShift AI 3.x, "model serving" has evolved into two distinct paths. Choosing the wrong path leads to either wasted infrastructure spend or unmanageable operational complexity.
 
-== Path A: Single Model (Dedicated Heavy Workloads)
+This section defines those paths and establishes the vocabulary necessary to navigate the new RHOAI 3.x landscape.
 
-**Scenario:** You have one critical model (e.g., a large fine-tuned model) serving a single application or a small set of known consumers. Latency and isolation matter more than multi-tenant sharing.
+== The Strategic Divide: Dedicated vs. Utility
 
-**Technology:** **KServe** with runtimes such as **TGIS (Trustworthy Generative AI Service)** or dedicated vLLM deployments.
+Not every AI workload is the same. Serving a massive, fine-tuned model for a single, high-frequency trading application requires a different architecture than providing general-purpose LLM access to 500 enterprise developers.
 
-* **How it works:** One InferenceService (or equivalent) per model. Resources are dedicated. No dynamic sharing across tenants.
-* **When to use:** Low concurrency, high predictability, or compliance requirements that demand dedicated capacity.
-* **Trade-off:** Underutilization during off-peak; you pay for reserved capacity.
+We categorize these approaches into two paths: **Dedicated Serving** and **Models as a Service (MaaS) Utility**.
 
-== Path B: MaaS / Distributed (High Concurrency, Shared API)
+[cols="1,3,3", options="header"]
+|===
+| Feature | Path A: Dedicated Serving (The "Specialist") | Path B: MaaS Utility (The "Generalist")
 
-**Scenario:** Multiple teams or applications need to call multiple models through a **single, governed API**. You want dynamic sharing, intelligent routing, and SLO guarantees without over-provisioning.
+| **Analogy**
+| A private race car. Optimized for one driver and maximum speed on a specific track.
+| A city bus system. Optimized for reliability, sharing resources efficiently among many riders, and metered usage.
 
-**Technology:** **vLLM** plus **llm-d** (distributed inference layer), with **Gateway API** for routing and **Kuadrant** for policy. This is the **focus of this course**.
+| **Use Case**
+| A single, critical application needing guaranteed, exclusive throughput. E.g., A fine-tuned 70B parameter model used solely by a fraud detection system.
+| Providing standardized API access (e.g., `gpt-3.5-turbo` equivalent) to multiple internal teams for varied tasks like summarization, coding assistance, or RAG.
 
-* **How it works:** vLLM runs as the inference engine; llm-d handles scheduling, routing, and (where applicable) cache-aware request distribution. Gateway API replaces legacy Routes. Kuadrant enforces rate limits and auth.
-* **When to use:** High concurrency, many models or many consumers, need for GPU slicing or disaggregated inference, and requirement for a single API surface with governance.
-* **Trade-off:** More moving parts; requires understanding of Gateway API, scaling (e.g., KEDA), and observability (e.g., TTFT).
+| **Infrastructure Focus**
+| **Performance Isolation.** The model claims entire GPUs. No sharing.
+| **Cost Efficiency & Governance.** GPUs are sliced using MIG or shared via time-slicing to maximize utilization.
+
+| **Key Technologies**
+| KServe with a single-node runtime (e.g., vLLM dedicated instance or NVIDIA NIM).
+| **The MaaS Stack:** Distributed vLLM, Gateway API for routing, and Kuadrant for multi-tenant rate limiting.
+
+| **Primary Pain Point**
+| Low utilization. If the app isn't using the GPU, it sits idle.
+| "Noisy neighbors." Ensuring one team's heavy usage doesn't degrade performance for others.
+|===
 
 [IMPORTANT]
-.Strategic Rule of Thumb
+.Crucial RHOAI 3.x Change: TGIS is Removed
 ====
-* **Dedicated, predictable, low concurrency?** Prefer **Path A** (KServe/TGIS or single vLLM).
-* **Shared API, high concurrency, governance, and dynamic slicing?** Prefer **Path B** (MaaS with vLLM + llm-d).
+In previous versions of OpenShift AI, the Text Generation Inference Server (TGIS) was a common runtime. **TGIS has been removed in RHOAI 3.x.**
+
+The new standard for high-performance inference across both dedicated and MaaS paths is **vLLM**, renowned for its PagedAttention algorithm that dramatically improves throughput.
 ====
 
-== The Junction: What to Do Next
+**This course focuses exclusively on Path B: The MaaS Utility.** We are building the factory that serves many, not the garage that builds one race car.
 
-After choosing your path:
+== The New Vocabulary: RHOAI 3.x Taxonomy
 
-* **Learn the terms:** Continue to the **Taxonomy** guide so you can speak the language of the stack (vLLM, Gateway API, Kuadrant).
-* **See the architecture:** Continue to the **Architecture Deep Dive** to understand the full stack (hardware → engine → routing → auth) and how scaling and observability work.
+To build a MaaS utility, you must master a new set of components that replace older Kubernetes paradigms.
 
----
-*Next: Master the vocabulary in the Taxonomy guide.*
+[NOTE]
+.The Shift from Routes to Gateways
+====
+The most significant architectural shift in RHOAI 3.x MaaS is moving away from standard OpenShift `Routes` for model traffic. We now use the Kubernetes **Gateway API**. This separates the role of the *Infrastructure Administrator* (who manages listeners, IPs, and SSL) from the *ML Engineer* (who just wants to attach a route to their service).
+====
+
+Here are the essential terms for the MaaS stack:
+
+vLLM (The Engine):::
+The default high-performance serving runtime in RHOAI 3.x. It uses PagedAttention to manage memory efficiently, allowing for higher batch sizes and faster token generation. In a MaaS setup, it is often deployed in a distributed manner.
+
+Gateway API (The Doorman):::
+The new Kubernetes standard for networking. It handles ingress traffic. In MaaS, a centralized "Gateway" accepts all API calls (e.g., `api.example.com/v1/completions`) and routes them to the correct backend model service based on the path or header.
+
+Kuadrant (The Bouncer & Meter):::
+The governance layer. It integrates with the Gateway API to enforce policies. Crucially for LLMs, Kuadrant provides **token-aware rate limiting**. It doesn't just count HTTP requests; it counts the actual cost (input + output tokens) of a request to prevent budget overruns by a single tenant.
+
+TrustyAI (The Watchdog):::
+The observability and compliance layer. It monitors model inputs and outputs over time to detect **data drift** (is live data different from training data?) and **bias** (is the model treating different groups unfairly?).
+
+== Next Steps: Choose Your Path
+
+You understand the strategy and you speak the language. Now, look at the blueprint.
+
+[.text-center]
+*Where do you want to go next?* +
++
+--
+link:architecture.html[**Option 1: Deep Dive into the Architecture Stack**] +
+*(Recommended for Architects & Platform Engineers needing the technical "how".)*
+--
++
+--
+link:lab-setup.html[**Option 2: Skip straight to the Hands-On Lab**] +
+*(Recommended for Developers who want to deploy "Hello World" immediately.)*
+--

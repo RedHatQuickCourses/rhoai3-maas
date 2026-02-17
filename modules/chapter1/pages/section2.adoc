@@ -1,75 +1,83 @@
-= MaaS Taxonomy: Terms and Definitions
-:navtitle: Taxonomy & Reference
+= The MaaS Stack: Architecture Deep Dive
+:navtitle: Architecture Deep Dive
 :toc: macro
-:role: Reference Guide
-:audience: Platform Engineers & Architects
-:description: Glossary of MaaS-related terms—vLLM, Gateway API, Kuadrant, and related concepts.
+:role: Architect & Platform Engineer
+:audience: Platform Leads, SREs, ML Ops
+:description: A technical breakdown of the OpenShift AI 3.x MaaS stack, including vLLM, Gateway API, KEDA, and TrustyAI.
 
 [.lead]
-*To operate the stack, you must speak its language.*
+You have chosen the MaaS utility path. Now, let's look at the blueprint.
 
-Use this page as a quick reference for the key terms in the Models-as-a-Service architecture on Red Hat OpenShift AI 3.x.
+To run AI as an industrialized service, you need more than just a container. You need a stack that handles **inference**, **routing**, **governance**, and **observability**.
 
-== Core Terms
+This section breaks down the "MaaS Stack" layer by layer, showing how Red Hat OpenShift AI 3.x orchestrates these components to deliver a secure, scalable API.
 
-=== MaaS (Models as a Service)
+image::maas-architecture-stack.png[Diagram showing the 4 layers: Hardware -> Inference (vLLM) -> Networking (Gateway) -> Governance (Kuadrant/TrustyAI)]
 
-A **centralized AI inference utility** where multiple models and consumers are served through a single, governed API. Resources (e.g., GPUs) can be shared dynamically; access and rate are controlled by policy. Contrast with "one deployment per model per team" or public APIs.
+== Layer 1: The Inference Engine (vLLM)
 
-=== vLLM
+At the heart of the stack is **vLLM**, the high-performance serving runtime.
 
-The **inference engine** used in the MaaS stack. vLLM is a high-performance, open-source server for LLMs that supports continuous batching, PagedAttention, and OpenAI-compatible APIs. In OpenShift AI 3.x, vLLM is the default engine for LLM inference when using the MaaS/distributed path.
+* **Role:** It loads the model weights and executes the neural network forward pass.
+* **Key Feature:** **PagedAttention**. Unlike legacy runtimes that fragment memory, vLLM manages GPU memory like an operating system manages RAM (using pages). This allows for higher batch sizes and throughput.
+* **Deployment:** vLLM runs as a standard Pod, but in a MaaS configuration, it is often deployed via the **Service Mesh** or **Serverless** components to support scale-to-zero.
 
-=== Gateway API
+== Layer 2: Role-Oriented Networking (Gateway API)
 
-The **routing layer** that replaces or complements legacy OpenShift Routes. Gateway API provides a standard way to define HTTP routes, backends, and traffic splitting. In the MaaS context, it is the "front door" through which inference requests are routed to the appropriate vLLM (or other) backends.
+In RHOAI 3.x, we move away from simple OpenShift Routes to the **Kubernetes Gateway API**. This splits the responsibility of "exposing the service" into two distinct roles:
 
-=== Kuadrant
+. **The Infrastructure Architect** manages the **Gateway**.
+* They define the "Front Door" (IP address, TLS certificates, load balancer hardware).
+* *Manifest:* `Gateway`
 
-The **policy and governance engine** for APIs. Kuadrant provides rate limiting, authentication, and other policies that apply to traffic entering via the Gateway API. It enables Zero Trust and guaranteed SLOs by controlling who can call what and at what rate.
+. **The ML Engineer** manages the **HTTPRoute**.
+* They simply "attach" their model to the Gateway.
+* *Manifest:* `HTTPRoute` (e.g., "Route traffic from `api.corp.com/v1/models/llama-3` to my vLLM service").
 
-=== Authorino (when referenced)
+[NOTE]
+.Why this matters
+====
+This separation means developers can deploy new models without needing cluster-admin privileges to configure ingress controllers. It is the technical enabler of "Self-Service."
+====
 
-An **auth layer** that can integrate with the Gateway to enforce authentication and authorization (e.g., API keys, OIDC) before requests reach the inference backend. Often used alongside Kuadrant for full governance.
+== Layer 3: The Governance Plane (Kuadrant)
 
-=== llm-d (Distributed Inference)
+An industrialized factory needs a foreman to ensure safety and efficiency. **Kuadrant** is that foreman.
 
-When using the **MaaS/distributed** path, **llm-d** is the component that orchestrates inference across multiple vLLM instances. It handles scheduling, cache-aware routing (e.g., KV cache affinity), and disaggregation (prefill vs. decode) so that high concurrency and SLOs can be met.
+It connects to the Gateway API to enforce policies **before** traffic hits the expensive GPUs.
 
-=== KEDA (Kubernetes Event-Driven Autoscaling)
+* **Rate Limiting:** Protects the system from being overwhelmed by a single user.
+* **Token-Awareness:** This is critical for LLMs. A request with 10 tokens costs less than a request with 10,000 tokens. Kuadrant can rate-limit based on the *aggregate token count*, ensuring true cost control.
+* **AuthN/AuthZ:** Integrates with **Authorino** to enforce OIDC authentication (Keycloak, Entra ID) at the edge.
 
-Used in the MaaS stack to **scale inference workloads** based on queue depth, token count, or other metrics—not just CPU. This allows the platform to scale up when demand spikes and scale down when idle, improving ROI.
+== Layer 4: Observability & Trust (TrustyAI)
 
-=== TTFT (Time to First Token)
+The final layer ensures the factory is producing quality goods. **TrustyAI** monitors the model's behavior in real-time.
 
-A key **observability metric** for inference. TTFT measures the latency from request submission to the first token of the response. Low, stable TTFT is critical for user experience and SLOs.
+* **Bias Detection:** Is the model showing statistical bias against protected groups in its output?
+* **Drift Detection:** Is the incoming data significantly different from the training data? (e.g., users asking about 2024 events when the model was trained on 2022 data).
+* **Explainability:** Providing insights into *why* a model gave a specific response.
 
-== Quick Reference
+== Scaling Logic: KEDA
 
-|===
-| **Term** | **Role in MaaS**
+How do we handle a burst of traffic? We don't just look at CPU usage.
 
-| MaaS
-| Centralized AI utility; API-first, governed
+**KEDA (Kubernetes Event-Driven Autoscaling)** scales the vLLM pods based on "application intelligence."
 
-| vLLM
-| Inference engine (serves the model)
+* **The Old Way (HPA):** Scale when CPU > 80%. (Too slow for AI; the queue is already full).
+* **The MaaS Way (KEDA):** Scale when `serving_queue_depth > 5`.
+* **Result:** The system spins up new pods *before* latency degrades, ensuring a consistent **Time-To-First-Token (TTFT)**.
 
-| Gateway API
-| Routing layer (replaces/supplements Routes)
+== Summary: The Request Lifecycle
 
-| Kuadrant
-| Policy, rate limiting, governance
+1. **User** sends a curl request to `api.corp.com`.
+2. **Gateway** receives the traffic.
+3. **Kuadrant** checks: "Does this user have quota remaining?" (If no -> 429 Error).
+4. **KEDA** checks: "Is the queue too deep?" (If yes -> Spin up more pods).
+5. **vLLM** processes the request using PagedAttention.
+6. **TrustyAI** asynchronously logs the input/output for bias analysis.
+7. **Response** is streamed back to the user.
 
-| llm-d
-| Distributed inference orchestration (scheduling, routing)
-
-| KEDA
-| Event-driven autoscaling (queue, tokens)
-
-| TTFT
-| Observability: time to first token
-|===
-
----
-*Next: See how these pieces fit together in the Architecture Deep Dive.*
+[.text-center]
+*You have the blueprints. Now, let's build the factory.* +
+link:lab-setup.html[**Next: Hands-On Lab - Deploying Your First MaaS Endpoint >**]

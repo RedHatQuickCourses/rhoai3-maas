@@ -1,0 +1,48 @@
+= Choosing Your Path: Single-Model vs. MaaS (Well-Lit Paths)
+:navtitle: Strategy Guide
+:toc: macro
+:role: Strategic Guide
+:audience: Architects & Platform Engineers
+:description: Compare deployment options—KServe/TGIS for dedicated workloads vs. vLLM + llm-d for MaaS and high concurrency.
+
+[.lead]
+*One size does not fit all. Pick the path that matches your concurrency and governance needs.*
+
+Not every inference workload needs the same architecture. A single, heavy model serving one high-value application is different from a shared API serving many teams and applications. Red Hat OpenShift AI 3.x supports both. Your job is to choose the right path.
+
+== Path A: Single Model (Dedicated Heavy Workloads)
+
+**Scenario:** You have one critical model (e.g., a large fine-tuned model) serving a single application or a small set of known consumers. Latency and isolation matter more than multi-tenant sharing.
+
+**Technology:** **KServe** with runtimes such as **TGIS (Trustworthy Generative AI Service)** or dedicated vLLM deployments.
+
+* **How it works:** One InferenceService (or equivalent) per model. Resources are dedicated. No dynamic sharing across tenants.
+* **When to use:** Low concurrency, high predictability, or compliance requirements that demand dedicated capacity.
+* **Trade-off:** Underutilization during off-peak; you pay for reserved capacity.
+
+== Path B: MaaS / Distributed (High Concurrency, Shared API)
+
+**Scenario:** Multiple teams or applications need to call multiple models through a **single, governed API**. You want dynamic sharing, intelligent routing, and SLO guarantees without over-provisioning.
+
+**Technology:** **vLLM** plus **llm-d** (distributed inference layer), with **Gateway API** for routing and **Kuadrant** for policy. This is the **focus of this course**.
+
+* **How it works:** vLLM runs as the inference engine; llm-d handles scheduling, routing, and (where applicable) cache-aware request distribution. Gateway API replaces legacy Routes. Kuadrant enforces rate limits and auth.
+* **When to use:** High concurrency, many models or many consumers, need for GPU slicing or disaggregated inference, and requirement for a single API surface with governance.
+* **Trade-off:** More moving parts; requires understanding of Gateway API, scaling (e.g., KEDA), and observability (e.g., TTFT).
+
+[IMPORTANT]
+.Strategic Rule of Thumb
+====
+* **Dedicated, predictable, low concurrency?** Prefer **Path A** (KServe/TGIS or single vLLM).
+* **Shared API, high concurrency, governance, and dynamic slicing?** Prefer **Path B** (MaaS with vLLM + llm-d).
+====
+
+== The Junction: What to Do Next
+
+After choosing your path:
+
+* **Learn the terms:** Continue to the **Taxonomy** guide so you can speak the language of the stack (vLLM, Gateway API, Kuadrant).
+* **See the architecture:** Continue to the **Architecture Deep Dive** to understand the full stack (hardware → engine → routing → auth) and how scaling and observability work.
+
+---
+*Next: Master the vocabulary in the Taxonomy guide.*

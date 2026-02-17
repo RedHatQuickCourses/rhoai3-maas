@@ -1,0 +1,60 @@
+= Knowledge Check: MaaS on OpenShift AI 3.x
+:navtitle: Quiz
+:toc: macro
+:role: Assessment
+:audience: Platform Engineers & Architects
+:description: Short quiz to validate understanding of MaaS concepts, stack, and deployment.
+
+[.lead]
+*Did you master the factory floor? Let's find out.*
+
+== Question 1: The Value Proposition
+
+**Scenario:** Your organization is debating whether to build an internal MaaS platform or use only public APIs (e.g., OpenAI) for LLM workloads.
+
+**Which benefit does MaaS provide that public APIs typically do not?**
+
+* [ ] A. Lower cost at very high, unpredictable usage.
+* [ ] B. Traffic and data stay on your private network (Zero Trust).
+* [x] C. Both guaranteed SLOs without "noisy neighbors" and control over where data is processed.
+* [ ] D. No need to manage any infrastructure.
+
+_Answer: C. MaaS gives you control over capacity and governance so you can guarantee SLOs and keep data on-prem or in your cloud. Public APIs share capacity and may not meet enterprise security/compliance needs._
+
+== Question 2: The Strategy
+
+**Scenario:** You need to serve one large, fine-tuned model to a single internal application with predictable, low concurrency.
+
+**Which path is most appropriate?**
+
+* [x] A. Path A: Single-model deployment (e.g., KServe/TGIS or dedicated vLLM).
+* [ ] B. Path B: MaaS with vLLM + llm-d and Gateway API for dynamic sharing.
+* [ ] C. Use only public APIs.
+* [ ] D. Deploy the model on a single laptop and expose it via ngrok.
+
+_Answer: A. For dedicated, low-concurrency workloads, Path A (single model) is simpler and avoids the overhead of the full MaaS stack. Path B is for high concurrency and shared API access._
+
+== Question 3: The Stack
+
+**What is the role of the Gateway API in the MaaS architecture?**
+
+* [ ] A. It runs the vLLM inference engine.
+* [ ] B. It stores model weights.
+* [x] C. It is the routing layer that receives client requests and forwards them to the correct inference backend.
+* [ ] D. It scales pods based on CPU.
+
+_Answer: C. The Gateway API is the "front door" for HTTP traffic; it routes requests to the appropriate backend (e.g., vLLM). vLLM runs inference; KEDA handles scaling._
+
+== Question 4: Observability
+
+**Which metric is most directly tied to user-perceived responsiveness for LLM inference?**
+
+* [ ] A. CPU utilization of the node.
+* [ ] B. Number of replicas.
+* [x] C. Time to First Token (TTFT).
+* [ ] D. Total number of requests per second.
+
+_Answer: C. TTFT measures latency until the first token is streamed; users perceive responsiveness from this. CPU and replica count are operational metrics; request rate does not directly indicate latency._
+
+---
+*Congratulations on completing the Models as a Service (MaaS) learning journey.*
