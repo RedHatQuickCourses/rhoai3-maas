@@ -3,10 +3,10 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>MaaS Taxonomy: Terms and Definitions :: Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</title>
+    <title>The MaaS Stack: Architecture Deep Dive :: Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</title>
     <link rel="prev" href="section1.html">
     <link rel="next" href="section3.html">
-    <meta name="description" content="Glossary of MaaS-related terms—vLLM, Gateway API, Kuadrant, and related concepts.">
+    <meta name="description" content="A technical breakdown of the OpenShift AI 3.x MaaS stack, including vLLM, Gateway API, KEDA, and TrustyAI.">
     <meta name="generator" content="Antora 3.1.3">
     <link rel="stylesheet" href="../../../_/css/site.css">
     <script>var uiRootPath = '../../../_'</script>
@@ -48,9 +48,6 @@
   <li class="nav-item" data-depth="0">
 <ul class="nav-list">
   <li class="nav-item" data-depth="1">
-    <a class="nav-link" href="index.html">Introduction &amp; Value</a>
-  </li>
-  <li class="nav-item" data-depth="1">
     <a class="nav-link" href="section1.html">Strategy Guide (Well-Lit Paths)</a>
   </li>
   <li class="nav-item is-current-page" data-depth="1">
@@ -61,9 +58,6 @@
   </li>
   <li class="nav-item" data-depth="1">
     <a class="nav-link" href="section4.html">Hands-On Lab</a>
-  </li>
-  <li class="nav-item" data-depth="1">
-    <a class="nav-link" href="section5.html">Troubleshooting</a>
   </li>
   <li class="nav-item" data-depth="1">
     <a class="nav-link" href="quiz.html">Quiz</a>
@@ -108,118 +102,199 @@
   <div class="toc-menu"></div>
 </aside>
 <article class="doc">
-<h1 class="page">MaaS Taxonomy: Terms and Definitions</h1>
+<h1 class="page">The MaaS Stack: Architecture Deep Dive</h1>
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph lead">
-<p><strong>To operate the stack, you must speak its language.</strong></p>
+<p>You have chosen the MaaS utility path. Now, let&#8217;s look at the blueprint.</p>
 </div>
 <div class="paragraph">
-<p>Use this page as a quick reference for the key terms in the Models-as-a-Service architecture on Red Hat OpenShift AI 3.x.</p>
+<p>To run AI as an industrialized service, you need more than just a container. You need a stack that handles <strong>inference</strong>, <strong>routing</strong>, <strong>governance</strong>, and <strong>observability</strong>.</p>
 </div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_core_terms"><a class="anchor" href="#_core_terms"></a>Core Terms</h2>
-<div class="sectionbody">
-<div class="sect2">
-<h3 id="_maas_models_as_a_service"><a class="anchor" href="#_maas_models_as_a_service"></a>MaaS (Models as a Service)</h3>
 <div class="paragraph">
-<p>A <strong>centralized AI inference utility</strong> where multiple models and consumers are served through a single, governed API. Resources (e.g., GPUs) can be shared dynamically; access and rate are controlled by policy. Contrast with "one deployment per model per team" or public APIs.</p>
+<p>This section breaks down the "MaaS Stack" layer by layer, showing how Red Hat OpenShift AI 3.x orchestrates these components to deliver a secure, scalable API.</p>
 </div>
-</div>
-<div class="sect2">
-<h3 id="_vllm"><a class="anchor" href="#_vllm"></a>vLLM</h3>
-<div class="paragraph">
-<p>The <strong>inference engine</strong> used in the MaaS stack. vLLM is a high-performance, open-source server for LLMs that supports continuous batching, PagedAttention, and OpenAI-compatible APIs. In OpenShift AI 3.x, vLLM is the default engine for LLM inference when using the MaaS/distributed path.</p>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_gateway_api"><a class="anchor" href="#_gateway_api"></a>Gateway API</h3>
-<div class="paragraph">
-<p>The <strong>routing layer</strong> that replaces or complements legacy OpenShift Routes. Gateway API provides a standard way to define HTTP routes, backends, and traffic splitting. In the MaaS context, it is the "front door" through which inference requests are routed to the appropriate vLLM (or other) backends.</p>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_kuadrant"><a class="anchor" href="#_kuadrant"></a>Kuadrant</h3>
-<div class="paragraph">
-<p>The <strong>policy and governance engine</strong> for APIs. Kuadrant provides rate limiting, authentication, and other policies that apply to traffic entering via the Gateway API. It enables Zero Trust and guaranteed SLOs by controlling who can call what and at what rate.</p>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_authorino_when_referenced"><a class="anchor" href="#_authorino_when_referenced"></a>Authorino (when referenced)</h3>
-<div class="paragraph">
-<p>An <strong>auth layer</strong> that can integrate with the Gateway to enforce authentication and authorization (e.g., API keys, OIDC) before requests reach the inference backend. Often used alongside Kuadrant for full governance.</p>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_llm_d_distributed_inference"><a class="anchor" href="#_llm_d_distributed_inference"></a>llm-d (Distributed Inference)</h3>
-<div class="paragraph">
-<p>When using the <strong>MaaS/distributed</strong> path, <strong>llm-d</strong> is the component that orchestrates inference across multiple vLLM instances. It handles scheduling, cache-aware routing (e.g., KV cache affinity), and disaggregation (prefill vs. decode) so that high concurrency and SLOs can be met.</p>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_keda_kubernetes_event_driven_autoscaling"><a class="anchor" href="#_keda_kubernetes_event_driven_autoscaling"></a>KEDA (Kubernetes Event-Driven Autoscaling)</h3>
-<div class="paragraph">
-<p>Used in the MaaS stack to <strong>scale inference workloads</strong> based on queue depth, token count, or other metrics—not just CPU. This allows the platform to scale up when demand spikes and scale down when idle, improving ROI.</p>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_ttft_time_to_first_token"><a class="anchor" href="#_ttft_time_to_first_token"></a>TTFT (Time to First Token)</h3>
-<div class="paragraph">
-<p>A key <strong>observability metric</strong> for inference. TTFT measures the latency from request submission to the first token of the response. Low, stable TTFT is critical for user experience and SLOs.</p>
+<div class="imageblock unresolved">
+<div class="content">
+<img src="maas-architecture-stack.png" alt="Diagram showing the 4 layers: Hardware &#8594; Inference (vLLM) &#8594; Networking (Gateway) &#8594; Governance (Kuadrant/TrustyAI)">
 </div>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_quick_reference"><a class="anchor" href="#_quick_reference"></a>Quick Reference</h2>
+<h2 id="_layer_1_the_inference_engine_vllm"><a class="anchor" href="#_layer_1_the_inference_engine_vllm"></a>Layer 1: The Inference Engine (vLLM)</h2>
 <div class="sectionbody">
-<table class="tableblock frame-all grid-all stretch">
-<colgroup>
-<col style="width: 50%;">
-<col style="width: 50%;">
-</colgroup>
-<thead>
+<div class="paragraph">
+<p>At the heart of the stack is <strong>vLLM</strong>, the high-performance serving runtime.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Role:</strong> It loads the model weights and executes the neural network forward pass.</p>
+</li>
+<li>
+<p><strong>Key Feature:</strong> <strong>PagedAttention</strong>. Unlike legacy runtimes that fragment memory, vLLM manages GPU memory like an operating system manages RAM (using pages). This allows for higher batch sizes and throughput.</p>
+</li>
+<li>
+<p><strong>Deployment:</strong> vLLM runs as a standard Pod, but in a MaaS configuration, it is often deployed via the <strong>Service Mesh</strong> or <strong>Serverless</strong> components to support scale-to-zero.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_layer_2_role_oriented_networking_gateway_api"><a class="anchor" href="#_layer_2_role_oriented_networking_gateway_api"></a>Layer 2: Role-Oriented Networking (Gateway API)</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In RHOAI 3.x, we move away from simple OpenShift Routes to the <strong>Kubernetes Gateway API</strong>. This splits the responsibility of "exposing the service" into two distinct roles:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>The Infrastructure Architect</strong> manages the <strong>Gateway</strong>.</p>
+<div class="ulist">
+<ul>
+<li>
+<p>They define the "Front Door" (IP address, TLS certificates, load balancer hardware).</p>
+</li>
+<li>
+<p><strong>Manifest:</strong> <code>Gateway</code></p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p><strong>The ML Engineer</strong> manages the <strong>HTTPRoute</strong>.</p>
+<div class="ulist">
+<ul>
+<li>
+<p>They simply "attach" their model to the Gateway.</p>
+</li>
+<li>
+<p><strong>Manifest:</strong> <code>HTTPRoute</code> (e.g., "Route traffic from <code>api.corp.com/v1/models/llama-3</code> to my vLLM service").</p>
+</li>
+</ul>
+</div>
+</li>
+</ol>
+</div>
+<div class="admonitionblock note">
+<table>
 <tr>
-<th class="tableblock halign-left valign-top"><strong>Term</strong></th>
-<th class="tableblock halign-left valign-top"><strong>Role in MaaS</strong></th>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="title">Why this matters</div>
+<div class="paragraph">
+<p>This separation means developers can deploy new models without needing cluster-admin privileges to configure ingress controllers. It is the technical enabler of "Self-Service."</p>
+</div>
+</td>
 </tr>
-</thead>
-<tbody>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">MaaS</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Centralized AI utility; API-first, governed</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">vLLM</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Inference engine (serves the model)</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Gateway API</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Routing layer (replaces/supplements Routes)</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Kuadrant</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Policy, rate limiting, governance</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">llm-d</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Distributed inference orchestration (scheduling, routing)</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">KEDA</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Event-driven autoscaling (queue, tokens)</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">TTFT</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Observability: time to first token</p></td>
-</tr>
-</tbody>
 </table>
-<hr>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_layer_3_the_governance_plane_kuadrant"><a class="anchor" href="#_layer_3_the_governance_plane_kuadrant"></a>Layer 3: The Governance Plane (Kuadrant)</h2>
+<div class="sectionbody">
 <div class="paragraph">
-<p><strong>Next: See how these pieces fit together in the Architecture Deep Dive.</strong></p>
+<p>An industrialized factory needs a foreman to ensure safety and efficiency. <strong>Kuadrant</strong> is that foreman.</p>
+</div>
+<div class="paragraph">
+<p>It connects to the Gateway API to enforce policies <strong>before</strong> traffic hits the expensive GPUs.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Rate Limiting:</strong> Protects the system from being overwhelmed by a single user.</p>
+</li>
+<li>
+<p><strong>Token-Awareness:</strong> This is critical for LLMs. A request with 10 tokens costs less than a request with 10,000 tokens. Kuadrant can rate-limit based on the <strong>aggregate token count</strong>, ensuring true cost control.</p>
+</li>
+<li>
+<p><strong>AuthN/AuthZ:</strong> Integrates with <strong>Authorino</strong> to enforce OIDC authentication (Keycloak, Entra ID) at the edge.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_layer_4_observability_trust_trustyai"><a class="anchor" href="#_layer_4_observability_trust_trustyai"></a>Layer 4: Observability &amp; Trust (TrustyAI)</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The final layer ensures the factory is producing quality goods. <strong>TrustyAI</strong> monitors the model&#8217;s behavior in real-time.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Bias Detection:</strong> Is the model showing statistical bias against protected groups in its output?</p>
+</li>
+<li>
+<p><strong>Drift Detection:</strong> Is the incoming data significantly different from the training data? (e.g., users asking about 2024 events when the model was trained on 2022 data).</p>
+</li>
+<li>
+<p><strong>Explainability:</strong> Providing insights into <strong>why</strong> a model gave a specific response.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_scaling_logic_keda"><a class="anchor" href="#_scaling_logic_keda"></a>Scaling Logic: KEDA</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>How do we handle a burst of traffic? We don&#8217;t just look at CPU usage.</p>
+</div>
+<div class="paragraph">
+<p><strong>KEDA (Kubernetes Event-Driven Autoscaling)</strong> scales the vLLM pods based on "application intelligence."</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>The Old Way (HPA):</strong> Scale when CPU &gt; 80%. (Too slow for AI; the queue is already full).</p>
+</li>
+<li>
+<p><strong>The MaaS Way (KEDA):</strong> Scale when <code>serving_queue_depth &gt; 5</code>.</p>
+</li>
+<li>
+<p><strong>Result:</strong> The system spins up new pods <strong>before</strong> latency degrades, ensuring a consistent <strong>Time-To-First-Token (TTFT)</strong>.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_summary_the_request_lifecycle"><a class="anchor" href="#_summary_the_request_lifecycle"></a>Summary: The Request Lifecycle</h2>
+<div class="sectionbody">
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>User</strong> sends a curl request to <code>api.corp.com</code>.</p>
+</li>
+<li>
+<p><strong>Gateway</strong> receives the traffic.</p>
+</li>
+<li>
+<p><strong>Kuadrant</strong> checks: "Does this user have quota remaining?" (If no &#8594; 429 Error).</p>
+</li>
+<li>
+<p><strong>KEDA</strong> checks: "Is the queue too deep?" (If yes &#8594; Spin up more pods).</p>
+</li>
+<li>
+<p><strong>vLLM</strong> processes the request using PagedAttention.</p>
+</li>
+<li>
+<p><strong>TrustyAI</strong> asynchronously logs the input/output for bias analysis.</p>
+</li>
+<li>
+<p><strong>Response</strong> is streamed back to the user.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph text-center">
+<p><strong>You have the blueprints. Now, let&#8217;s build the factory.</strong><br>
+<a href="lab-setup.html"><strong>Next: Hands-On Lab - Deploying Your First MaaS Endpoint &gt;</strong></a></p>
 </div>
 </div>
 </div>

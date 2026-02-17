@@ -3,10 +3,10 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Lab: Deploy Your First MaaS Endpoint :: Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</title>
+    <title>Day-2 Operations: Keeping the Factory Running :: Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</title>
     <link rel="prev" href="section3.html">
-    <link rel="next" href="section5.html">
-    <meta name="description" content="Install OpenShift AI 3.x, enable KServe and Dashboard, deploy an LLMInferenceService with vLLM, and test with curl.">
+    <link rel="next" href="quiz.html">
+    <meta name="description" content="How to monitor, debug, and tune the Red Hat OpenShift AI 3.x MaaS stack when things go wrong.">
     <meta name="generator" content="Antora 3.1.3">
     <link rel="stylesheet" href="../../../_/css/site.css">
     <script>var uiRootPath = '../../../_'</script>
@@ -48,9 +48,6 @@
   <li class="nav-item" data-depth="0">
 <ul class="nav-list">
   <li class="nav-item" data-depth="1">
-    <a class="nav-link" href="index.html">Introduction &amp; Value</a>
-  </li>
-  <li class="nav-item" data-depth="1">
     <a class="nav-link" href="section1.html">Strategy Guide (Well-Lit Paths)</a>
   </li>
   <li class="nav-item" data-depth="1">
@@ -61,9 +58,6 @@
   </li>
   <li class="nav-item is-current-page" data-depth="1">
     <a class="nav-link" href="section4.html">Hands-On Lab</a>
-  </li>
-  <li class="nav-item" data-depth="1">
-    <a class="nav-link" href="section5.html">Troubleshooting</a>
   </li>
   <li class="nav-item" data-depth="1">
     <a class="nav-link" href="quiz.html">Quiz</a>
@@ -108,38 +102,258 @@
   <div class="toc-menu"></div>
 </aside>
 <article class="doc">
-<h1 class="page">Lab: Deploy Your First MaaS Endpoint</h1>
+<h1 class="page">Day-2 Operations: Keeping the Factory Running</h1>
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph lead">
-<p><strong>Theory is over. It is time to deploy.</strong></p>
+<p><strong>Building the factory is Step 1. Keeping it running is the rest of your career.</strong></p>
 </div>
 <div class="paragraph">
-<p>In this lab, you will stand up a minimal MaaS-style endpoint on Red Hat OpenShift AI 3.x: install the operator, enable the required components, deploy an LLM inference service using vLLM, and verify it with an OpenAI-compatible request.</p>
+<p>In a distributed MaaS environment, a "broken" service isn&#8217;t just a crashing pod. It could be a misconfigured Gateway route, an aggressive rate limit, or a saturated GPU.</p>
 </div>
-<div class="admonitionblock important">
-<table>
+<div class="paragraph">
+<p>This guide covers the critical observability signals and the three most common failure scenarios in the RHOAI 3.x stack.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_1_the_dashboard_what_to_watch"><a class="anchor" href="#_1_the_dashboard_what_to_watch"></a>1. The Dashboard: What to Watch</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Before debugging, you need visibility. Do not rely on user complaints.</p>
+</div>
+<div class="sect2">
+<h3 id="_key_metrics_prometheus_console"><a class="anchor" href="#_key_metrics_prometheus_console"></a>Key Metrics (Prometheus / Console)</h3>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 40%;">
+<col style="width: 40%;">
+</colgroup>
+<thead>
 <tr>
-<td class="icon">
-<i class="fa icon-important" title="Important"></i>
-</td>
-<td class="content">
-<div class="title">Prerequisites</div>
+<th class="tableblock halign-left valign-top">Metric</th>
+<th class="tableblock halign-left valign-top">What it tells you</th>
+<th class="tableblock halign-left valign-top">Alert Threshold</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>TTFT (Time To First Token)</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The latency user perceives. High TTFT means the system is queuing requests or the GPU is overloaded.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">&gt; 200ms (for interactive chat)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Token Generation Rate</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The throughput of the factory. Sudden drops indicate upstream issues or model crashes.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">&lt; 10 tokens/sec (per stream)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Gateway 4xx/5xx Rate</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>429:</strong> Kuadrant is blocking traffic (Good/Policy).<br>
+<strong>404:</strong> Route misconfiguration (Bad).<br>
+<strong>503:</strong> vLLM backend is down or scaling from zero (Bad).</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">&gt; 1% (excluding valid 429s)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>GPU Memory Utilization</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">How full the KV Cache is. If this hits 100%, vLLM may swap to CPU or reject requests.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">&gt; 95% sustained</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_2_troubleshooting_scenario_a_the_broken_door_404_not_found"><a class="anchor" href="#_2_troubleshooting_scenario_a_the_broken_door_404_not_found"></a>2. Troubleshooting Scenario A: "The Broken Door" (404 Not Found)</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><strong>Symptom:</strong> You <code>curl</code> the endpoint and get <code>404 Not Found</code>.
+<strong>The Component:</strong> Gateway API.</p>
+</div>
+<div class="paragraph">
+<p>In RHOAI 3.x, the Service Mesh/Gateway is strict. A 404 usually means the <strong>HTTPRoute</strong> is not correctly attached to the <strong>Gateway</strong>.</p>
+</div>
 <div class="ulist">
 <ul>
 <li>
-<p>An <strong>OpenShift cluster</strong> (4.x) with sufficient resources for the OpenShift AI operator and at least one GPU node (or a node that can run the chosen model for testing).</p>
-</li>
-<li>
-<p><strong>Cluster-admin</strong> or equivalent permissions to install operators and create resources in the target namespace.</p>
-</li>
-<li>
-<p>The <strong><code>oc</code></strong> CLI installed and authenticated (<code>oc login</code>).</p>
-</li>
-<li>
-<p><strong>curl</strong> (or similar) for testing the API.</p>
+<p><strong>Diagnosis:</strong></p>
 </li>
 </ul>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre># 1. Check if the HTTPRoute is accepted
+oc describe httproute granite-route -n maas-production</pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Look for:</strong> <code>Conditions: Accepted = False</code>.</p>
+</li>
+<li>
+<p><strong>Common Fixes:</strong></p>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Hostname Mismatch:</strong> Does the <code>curl</code> header (<code>-H "Host: api.maas.example.com"</code>) match the <code>hostnames</code> in the YAML exactly?</p>
+</li>
+<li>
+<p><strong>Gateway Namespace:</strong> Did you reference the Gateway in the <code>istio-system</code> (or correct) namespace?</p>
+</li>
+<li>
+<p><strong>Port Mismatch:</strong> Does the <code>backendRef</code> point to port <code>8080</code> (vLLM default)?</p>
+</li>
+</ul>
+</div>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_3_troubleshooting_scenario_b_the_stop_sign_429_too_many_requests"><a class="anchor" href="#_3_troubleshooting_scenario_b_the_stop_sign_429_too_many_requests"></a>3. Troubleshooting Scenario B: "The Stop Sign" (429 Too Many Requests)</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><strong>Symptom:</strong> Users report their requests are being rejected.
+<strong>The Component:</strong> Kuadrant (Rate Limiting).</p>
+</div>
+<div class="paragraph">
+<p>This is usually "working as designed," but you need to verify <strong>why</strong>.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Diagnosis:</strong></p>
+</li>
+</ul>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre># 1. Check the RateLimitPolicy status
+oc describe ratelimitpolicy granite-protection -n maas-production</pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Check the Headers:</strong> Run <code>curl -v</code>. Kuadrant injects headers telling you the limit.</p>
+<div class="ulist">
+<ul>
+<li>
+<p><code>x-ratelimit-remaining: 0</code></p>
+</li>
+<li>
+<p><code>x-ratelimit-reset: 5</code></p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p><strong>Fix:</strong></p>
+<div class="ulist">
+<ul>
+<li>
+<p>If legitimate traffic is blocked, edit the <code>RateLimitPolicy</code> YAML to increase the <code>limits</code> bucket.</p>
+</li>
+<li>
+<p><strong>Pro Tip:</strong> In RHOAI 3.x, ensure you are counting <strong>Tokens</strong>, not just Requests, if you configured specific descriptors.</p>
+</li>
+</ul>
+</div>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_4_troubleshooting_scenario_c_the_silent_queue_high_latency_pending_pods"><a class="anchor" href="#_4_troubleshooting_scenario_c_the_silent_queue_high_latency_pending_pods"></a>4. Troubleshooting Scenario C: "The Silent Queue" (High Latency / Pending Pods)</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><strong>Symptom:</strong> Requests succeed (200 OK) but take 10+ seconds to start (High TTFT).
+<strong>The Component:</strong> KEDA &amp; vLLM.</p>
+</div>
+<div class="paragraph">
+<p>This means the "Queue" is full, and KEDA isn&#8217;t scaling fast enough.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Diagnosis:</strong></p>
+</li>
+</ul>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre># 1. Check the HorizontalPodAutoscaler (HPA) generated by KEDA
+oc get hpa -n maas-production</pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Look for:</strong> <code>TARGETs</code> showing <code>10/1</code> (Current/Target). If the current value is high, KEDA is trying to scale.</p>
+</li>
+<li>
+<p><strong>Why isn&#8217;t it scaling?</strong></p>
+</li>
+</ul>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>oc get pods -n maas-production
+# Status: Pending?</pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Root Cause:</strong> <strong>GPU Starvation.</strong> You have hit the physical limits of your cluster. HPA wants 5 pods, but you only have GPUs for 2.</p>
+</li>
+<li>
+<p><strong>Fix:</strong></p>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Short Term:</strong> Reduce <code>minReplicas</code> or <code>maxReplicas</code>.</p>
+</li>
+<li>
+<p><strong>Long Term:</strong> Purchase more nodes or enable <strong>MIG (Multi-Instance GPU)</strong> to slice existing cards into smaller units.</p>
+</li>
+</ul>
+</div>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_5_tuning_vllm_for_performance"><a class="anchor" href="#_5_tuning_vllm_for_performance"></a>5. Tuning vLLM for Performance</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>If your architecture is correct but the model is just <strong>slow</strong>, tune the engine.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml"># Inside your ServingRuntime YAML
+args:
+  - "--gpu-memory-utilization=0.95" # Increase KV Cache space
+  - "--max-model-len=4096"          # Cap context to save memory
+  - "--enforce-eager"               # Use for debugging CUDA graph issues</code></pre>
+</div>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+<div class="title">The "OOM" Trap</div>
+<div class="paragraph">
+<p>If vLLM crashes with <code>OOMKilled</code>, it is not usually the <strong>model weights</strong>; it is the <strong>KV Cache</strong> growing too large during long conversations. Decrease <code>--gpu-memory-utilization</code> to reserve a buffer for overhead.</p>
 </div>
 </td>
 </tr>
@@ -148,254 +362,39 @@
 </div>
 </div>
 <div class="sect1">
-<h2 id="_step_1_install_the_openshift_ai_operator"><a class="anchor" href="#_step_1_install_the_openshift_ai_operator"></a>Step 1: Install the OpenShift AI Operator</h2>
+<h2 id="_conclusion_you_are_ready"><a class="anchor" href="#_conclusion_you_are_ready"></a>Conclusion: You Are Ready</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Install the Red Hat OpenShift AI operator from the <strong>fast-3.x</strong> (or equivalent) channel.</p>
+<p>You have completed the <strong>Red Hat OpenShift AI 3.x MaaS Learning Journey</strong>.</p>
 </div>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p><strong>From the OpenShift Console (Administrator view):</strong></p>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p>Go to <strong>Operators</strong> → <strong>OperatorHub</strong>.</p>
-</li>
-<li>
-<p>Search for <strong>Red Hat OpenShift AI</strong> or <strong>OpenShift AI</strong>.</p>
-</li>
-<li>
-<p>Click <strong>Install</strong>.</p>
-</li>
-<li>
-<p>Choose <strong>Channel:</strong> <code>fast-3.x</code> (or the 3.x channel recommended for your release).</p>
-</li>
-<li>
-<p>Choose <strong>Installation mode:</strong> All namespaces (or a specific namespace if your process requires it).</p>
-</li>
-<li>
-<p>Click <strong>Install</strong> and wait for the operator to be <strong>Installed</strong> and <strong>Succeeded</strong>.</p>
-</li>
-</ol>
-</div>
-</li>
-<li>
-<p><strong>Verify:</strong></p>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get csv -A | grep -i openshift.ai
-# or
-oc get csv -A | grep -i red-hat-openShift-ai</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>The CSV should show <strong>Succeeded</strong>.</p>
-</div>
-</li>
-</ol>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_step_2_enable_kserve_and_the_dashboard"><a class="anchor" href="#_step_2_enable_kserve_and_the_dashboard"></a>Step 2: Enable KServe and the Dashboard</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>After the operator is installed, enable the components required for inference and the dashboard.</p>
-</div>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p><strong>Create or edit the Data Science Cluster instance (DSCI / default config):</strong></p>
-<div class="paragraph">
-<p>Depending on your OpenShift AI version, you may need to create a <code>DataScienceCluster</code> or similar custom resource and set:
-  * <strong>KServe:</strong> enabled (required for InferenceService / LLMInferenceService).
-  * <strong>Dashboard:</strong> enabled (optional but useful for UI-based configuration and Model Catalog).</p>
-</div>
-</li>
-<li>
-<p><strong>From the OpenShift AI Dashboard (if enabled):</strong></p>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p>Log in to the <strong>OpenShift AI</strong> dashboard (link provided by the operator or from the OpenShift console).</p>
-</li>
-<li>
-<p>Navigate to <strong>Settings</strong> or <strong>Cluster settings</strong> and confirm <strong>KServe</strong> is enabled and the <strong>Dashboard</strong> is available.</p>
-</li>
-</ol>
-</div>
-</li>
-<li>
-<p><strong>Verify KServe:</strong></p>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get pods -n redhat-ods-applications | grep -i kserve
-# or the namespace where KServe is deployed</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Pods related to KServe (e.g., controller, agent) should be <strong>Running</strong>.</p>
-</div>
-</li>
-</ol>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_step_3_deploy_an_llminferenceservice_with_vllm"><a class="anchor" href="#_step_3_deploy_an_llminferenceservice_with_vllm"></a>Step 3: Deploy an LLMInferenceService with vLLM</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>Create an <strong>LLMInferenceService</strong> that uses the vLLM runtime. This is the core "model as a service" resource.</p>
-</div>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p><strong>Create a project (if needed):</strong></p>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc new-project my-maas-lab</code></pre>
-</div>
-</div>
-</li>
-<li>
-<p><strong>Create the LLMInferenceService:</strong></p>
-<div class="paragraph">
-<p>Save the following as <code>llm-inference-service.yaml</code> (adjust namespace, model URI, and hardware profile to match your environment):</p>
-</div>
-</li>
-</ol>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: serving.kserve.io/v1alpha1
-kind: LLMInferenceService
-metadata:
-  name: maas-demo
-  namespace: my-maas-lab
-  annotations:
-    opendatahub.io/model-type: generative
-spec:
-  replicas: 1
-  model:
-    uri: "hf://Qwen/Qwen3-0.6B"
-    name: "Qwen3-0.6B"
-  template:
-    spec:
-      containers:
-        - name: kserve-container
-          resources:
-            limits:
-              nvidia.com/gpu: "1"
-            requests:
-              nvidia.com/gpu: "1"
-          env:
-            - name: VLLM_ADDITIONAL_ARGS
-              value: "--max-model-len=4096"</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>+
-Apply it:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f llm-inference-service.yaml</code></pre>
-</div>
-</div>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p><strong>Wait for the service to be ready:</strong></p>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get llminferenceservice -n my-maas-lab -w
-# Wait until READY is True</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>The first time, the image and model may take several minutes to pull and load.</p>
-</div>
-</li>
-</ol>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_step_4_get_the_inference_url_and_test_with_curl"><a class="anchor" href="#_step_4_get_the_inference_url_and_test_with_curl"></a>Step 4: Get the Inference URL and Test with curl</h2>
-<div class="sectionbody">
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p><strong>Obtain the inference URL:</strong></p>
-<div class="paragraph">
-<p>Depending on your setup, the URL may come from:
-  * The <strong>OpenShift AI Dashboard</strong> (Model Serving → your service → endpoint).
-  * Or an <strong>HTTPRoute</strong> / <strong>Route</strong> created by KServe:</p>
-</div>
-</li>
-</ol>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get route -n my-maas-lab
-# or
-oc get httproute -n my-maas-lab
-oc get inferenceservice maas-demo -n my-maas-lab -o jsonpath='{.status.url}'</code></pre>
-</div>
-</div>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p><strong>Send an OpenAI-compatible request:</strong></p>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">export INFERENCE_URL="&lt;your-inference-url&gt;"   # e.g. https://maas-demo-my-maas-lab.apps.cluster.example.com
-
-curl -k -X POST "$INFERENCE_URL/v1/chat/completions" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "Qwen3-0.6B",
-    "messages": [
-      {"role": "user", "content": "Say hello in one sentence."}
-    ],
-    "max_tokens": 50
-  }'</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p><strong>Success:</strong> You should receive a JSON response with <code>choices[].message.content</code> containing the model&#8217;s reply.</p>
-</div>
-</li>
-</ol>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_step_5_verify_end_to_end"><a class="anchor" href="#_step_5_verify_end_to_end"></a>Step 5: Verify End-to-End</h2>
-<div class="sectionbody">
 <div class="ulist">
 <ul>
 <li>
-<p><strong>Dashboard:</strong> In the OpenShift AI Dashboard, open <strong>Model Serving</strong> (or equivalent) and confirm <code>maas-demo</code> is <strong>Started</strong> or <strong>Ready</strong>.</p>
+<p>You understand the <strong>Strategy</strong> (MaaS vs. Dedicated).</p>
 </li>
 <li>
-<p><strong>Pods:</strong> <code>oc get pods -n my-maas-lab</code> should show the inference pod <strong>Running</strong>.</p>
+<p>You speak the <strong>Taxonomy</strong> (vLLM, Gateway, Kuadrant).</p>
 </li>
 <li>
-<p><strong>Logs:</strong> If something fails, check <code>oc logs -n my-maas-lab -l serving.kserve.io/inferenceservice=maas-demo</code>.</p>
+<p>You have <strong>Built the Factory</strong> (Lab).</p>
+</li>
+<li>
+<p>You can <strong>Fix the Machinery</strong> (Troubleshooting).</p>
 </li>
 </ul>
 </div>
-<hr>
 <div class="paragraph">
-<p><strong>You have deployed your first MaaS-style endpoint. Next: review Sharp Edges (Troubleshooting) and take the Knowledge Check.</strong></p>
+<p><strong>Next Steps:</strong>
+Go to the <strong>Red Hat Hybrid Cloud Console</strong> and start your pilot.</p>
+</div>
+<div class="paragraph text-center">
+<p><strong>[End of Course]</strong></p>
 </div>
 </div>
 </div>
 <nav class="pagination">
   <span class="prev"><a href="section3.html">Architecture Deep Dive</a></span>
-  <span class="next"><a href="section5.html">Troubleshooting</a></span>
+  <span class="next"><a href="quiz.html">Quiz</a></span>
 </nav>
 </article>
   </div>

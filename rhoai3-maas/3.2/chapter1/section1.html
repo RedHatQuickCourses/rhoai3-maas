@@ -3,10 +3,10 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Choosing Your Path: Single-Model vs. MaaS (Well-Lit Paths) :: Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</title>
-    <link rel="prev" href="index.html">
+    <title>Strategy &amp; Taxonomy: Defining Your Path to Production :: Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</title>
+    <link rel="prev" href="../index.html">
     <link rel="next" href="section2.html">
-    <meta name="description" content="Compare deployment options—KServe/TGIS for dedicated workloads vs. vLLM + llm-d for MaaS and high concurrency.">
+    <meta name="description" content="Define the strategic deployment models in Red Hat OpenShift AI 3.x and master the essential vocabulary of the new MaaS stack.">
     <meta name="generator" content="Antora 3.1.3">
     <link rel="stylesheet" href="../../../_/css/site.css">
     <script>var uiRootPath = '../../../_'</script>
@@ -47,9 +47,6 @@
   </li>
   <li class="nav-item" data-depth="0">
 <ul class="nav-list">
-  <li class="nav-item" data-depth="1">
-    <a class="nav-link" href="index.html">Introduction &amp; Value</a>
-  </li>
   <li class="nav-item is-current-page" data-depth="1">
     <a class="nav-link" href="section1.html">Strategy Guide (Well-Lit Paths)</a>
   </li>
@@ -61,9 +58,6 @@
   </li>
   <li class="nav-item" data-depth="1">
     <a class="nav-link" href="section4.html">Hands-On Lab</a>
-  </li>
-  <li class="nav-item" data-depth="1">
-    <a class="nav-link" href="section5.html">Troubleshooting</a>
   </li>
   <li class="nav-item" data-depth="1">
     <a class="nav-link" href="quiz.html">Quiz</a>
@@ -108,63 +102,70 @@
   <div class="toc-menu"></div>
 </aside>
 <article class="doc">
-<h1 class="page">Choosing Your Path: Single-Model vs. MaaS (Well-Lit Paths)</h1>
+<h1 class="page">Strategy &amp; Taxonomy: Defining Your Path to Production</h1>
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph lead">
-<p><strong>One size does not fit all. Pick the path that matches your concurrency and governance needs.</strong></p>
+<p>Before rushing to deploy a container, you must choose your architectural strategy.</p>
 </div>
 <div class="paragraph">
-<p>Not every inference workload needs the same architecture. A single, heavy model serving one high-value application is different from a shared API serving many teams and applications. Red Hat OpenShift AI 3.x supports both. Your job is to choose the right path.</p>
+<p>In Red Hat OpenShift AI 3.x, "model serving" has evolved into two distinct paths. Choosing the wrong path leads to either wasted infrastructure spend or unmanageable operational complexity.</p>
+</div>
+<div class="paragraph">
+<p>This section defines those paths and establishes the vocabulary necessary to navigate the new RHOAI 3.x landscape.</p>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_path_a_single_model_dedicated_heavy_workloads"><a class="anchor" href="#_path_a_single_model_dedicated_heavy_workloads"></a>Path A: Single Model (Dedicated Heavy Workloads)</h2>
+<h2 id="_the_strategic_divide_dedicated_vs_utility"><a class="anchor" href="#_the_strategic_divide_dedicated_vs_utility"></a>The Strategic Divide: Dedicated vs. Utility</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p><strong>Scenario:</strong> You have one critical model (e.g., a large fine-tuned model) serving a single application or a small set of known consumers. Latency and isolation matter more than multi-tenant sharing.</p>
+<p>Not every AI workload is the same. Serving a massive, fine-tuned model for a single, high-frequency trading application requires a different architecture than providing general-purpose LLM access to 500 enterprise developers.</p>
 </div>
 <div class="paragraph">
-<p><strong>Technology:</strong> <strong>KServe</strong> with runtimes such as <strong>TGIS (Trustworthy Generative AI Service)</strong> or dedicated vLLM deployments.</p>
+<p>We categorize these approaches into two paths: <strong>Dedicated Serving</strong> and <strong>Models as a Service (MaaS) Utility</strong>.</p>
 </div>
-<div class="ulist">
-<ul>
-<li>
-<p><strong>How it works:</strong> One InferenceService (or equivalent) per model. Resources are dedicated. No dynamic sharing across tenants.</p>
-</li>
-<li>
-<p><strong>When to use:</strong> Low concurrency, high predictability, or compliance requirements that demand dedicated capacity.</p>
-</li>
-<li>
-<p><strong>Trade-off:</strong> Underutilization during off-peak; you pay for reserved capacity.</p>
-</li>
-</ul>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_path_b_maas_distributed_high_concurrency_shared_api"><a class="anchor" href="#_path_b_maas_distributed_high_concurrency_shared_api"></a>Path B: MaaS / Distributed (High Concurrency, Shared API)</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p><strong>Scenario:</strong> Multiple teams or applications need to call multiple models through a <strong>single, governed API</strong>. You want dynamic sharing, intelligent routing, and SLO guarantees without over-provisioning.</p>
-</div>
-<div class="paragraph">
-<p><strong>Technology:</strong> <strong>vLLM</strong> plus <strong>llm-d</strong> (distributed inference layer), with <strong>Gateway API</strong> for routing and <strong>Kuadrant</strong> for policy. This is the <strong>focus of this course</strong>.</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p><strong>How it works:</strong> vLLM runs as the inference engine; llm-d handles scheduling, routing, and (where applicable) cache-aware request distribution. Gateway API replaces legacy Routes. Kuadrant enforces rate limits and auth.</p>
-</li>
-<li>
-<p><strong>When to use:</strong> High concurrency, many models or many consumers, need for GPU slicing or disaggregated inference, and requirement for a single API surface with governance.</p>
-</li>
-<li>
-<p><strong>Trade-off:</strong> More moving parts; requires understanding of Gateway API, scaling (e.g., KEDA), and observability (e.g., TTFT).</p>
-</li>
-</ul>
-</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 14.2857%;">
+<col style="width: 42.8571%;">
+<col style="width: 42.8572%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Feature</th>
+<th class="tableblock halign-left valign-top">Path A: Dedicated Serving (The "Specialist")</th>
+<th class="tableblock halign-left valign-top">Path B: MaaS Utility (The "Generalist")</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Analogy</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A private race car. Optimized for one driver and maximum speed on a specific track.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A city bus system. Optimized for reliability, sharing resources efficiently among many riders, and metered usage.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Use Case</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A single, critical application needing guaranteed, exclusive throughput. E.g., A fine-tuned 70B parameter model used solely by a fraud detection system.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Providing standardized API access (e.g., <code>gpt-3.5-turbo</code> equivalent) to multiple internal teams for varied tasks like summarization, coding assistance, or RAG.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Infrastructure Focus</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Performance Isolation.</strong> The model claims entire GPUs. No sharing.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Cost Efficiency &amp; Governance.</strong> GPUs are sliced using MIG or shared via time-slicing to maximize utilization.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Key Technologies</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">KServe with a single-node runtime (e.g., vLLM dedicated instance or NVIDIA NIM).</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>The MaaS Stack:</strong> Distributed vLLM, Gateway API for routing, and Kuadrant for multi-tenant rate limiting.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Primary Pain Point</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Low utilization. If the app isn&#8217;t using the GPU, it sits idle.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">"Noisy neighbors." Ensuring one team&#8217;s heavy usage doesn&#8217;t degrade performance for others.</p></td>
+</tr>
+</tbody>
+</table>
 <div class="admonitionblock important">
 <table>
 <tr>
@@ -172,47 +173,103 @@
 <i class="fa icon-important" title="Important"></i>
 </td>
 <td class="content">
-<div class="title">Strategic Rule of Thumb</div>
-<div class="ulist">
-<ul>
-<li>
-<p><strong>Dedicated, predictable, low concurrency?</strong> Prefer <strong>Path A</strong> (KServe/TGIS or single vLLM).</p>
-</li>
-<li>
-<p><strong>Shared API, high concurrency, governance, and dynamic slicing?</strong> Prefer <strong>Path B</strong> (MaaS with vLLM + llm-d).</p>
-</li>
-</ul>
+<div class="title">Crucial RHOAI 3.x Change: TGIS is Removed</div>
+<div class="paragraph">
+<p>In previous versions of OpenShift AI, the Text Generation Inference Server (TGIS) was a common runtime. <strong>TGIS has been removed in RHOAI 3.x.</strong></p>
+</div>
+<div class="paragraph">
+<p>The new standard for high-performance inference across both dedicated and MaaS paths is <strong>vLLM</strong>, renowned for its PagedAttention algorithm that dramatically improves throughput.</p>
 </div>
 </td>
 </tr>
 </table>
 </div>
+<div class="paragraph">
+<p><strong>This course focuses exclusively on Path B: The MaaS Utility.</strong> We are building the factory that serves many, not the garage that builds one race car.</p>
+</div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_the_junction_what_to_do_next"><a class="anchor" href="#_the_junction_what_to_do_next"></a>The Junction: What to Do Next</h2>
+<h2 id="_the_new_vocabulary_rhoai_3_x_taxonomy"><a class="anchor" href="#_the_new_vocabulary_rhoai_3_x_taxonomy"></a>The New Vocabulary: RHOAI 3.x Taxonomy</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>After choosing your path:</p>
+<p>To build a MaaS utility, you must master a new set of components that replace older Kubernetes paradigms.</p>
 </div>
-<div class="ulist">
-<ul>
-<li>
-<p><strong>Learn the terms:</strong> Continue to the <strong>Taxonomy</strong> guide so you can speak the language of the stack (vLLM, Gateway API, Kuadrant).</p>
-</li>
-<li>
-<p><strong>See the architecture:</strong> Continue to the <strong>Architecture Deep Dive</strong> to understand the full stack (hardware → engine → routing → auth) and how scaling and observability work.</p>
-</li>
-</ul>
-</div>
-<hr>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="title">The Shift from Routes to Gateways</div>
 <div class="paragraph">
-<p><strong>Next: Master the vocabulary in the Taxonomy guide.</strong></p>
+<p>The most significant architectural shift in RHOAI 3.x MaaS is moving away from standard OpenShift <code>Routes</code> for model traffic. We now use the Kubernetes <strong>Gateway API</strong>. This separates the role of the <strong>Infrastructure Administrator</strong> (who manages listeners, IPs, and SSL) from the <strong>ML Engineer</strong> (who just wants to attach a route to their service).</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Here are the essential terms for the MaaS stack:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">vLLM (The Engine)</dt>
+<dd>
+<p>The default high-performance serving runtime in RHOAI 3.x. It uses PagedAttention to manage memory efficiently, allowing for higher batch sizes and faster token generation. In a MaaS setup, it is often deployed in a distributed manner.</p>
+</dd>
+<dt class="hdlist1">Gateway API (The Doorman)</dt>
+<dd>
+<p>The new Kubernetes standard for networking. It handles ingress traffic. In MaaS, a centralized "Gateway" accepts all API calls (e.g., <code>api.example.com/v1/completions</code>) and routes them to the correct backend model service based on the path or header.</p>
+</dd>
+<dt class="hdlist1">Kuadrant (The Bouncer &amp; Meter)</dt>
+<dd>
+<p>The governance layer. It integrates with the Gateway API to enforce policies. Crucially for LLMs, Kuadrant provides <strong>token-aware rate limiting</strong>. It doesn&#8217;t just count HTTP requests; it counts the actual cost (input + output tokens) of a request to prevent budget overruns by a single tenant.</p>
+</dd>
+<dt class="hdlist1">TrustyAI (The Watchdog)</dt>
+<dd>
+<p>The observability and compliance layer. It monitors model inputs and outputs over time to detect <strong>data drift</strong> (is live data different from training data?) and <strong>bias</strong> (is the model treating different groups unfairly?).</p>
+</dd>
+</dl>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_next_steps_choose_your_path"><a class="anchor" href="#_next_steps_choose_your_path"></a>Next Steps: Choose Your Path</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>You understand the strategy and you speak the language. Now, look at the blueprint.</p>
+</div>
+<div class="paragraph text-center">
+<p><strong>Where do you want to go next?</strong><br></p>
+</div>
+<div class="paragraph">
+<p>+</p>
+</div>
+<div class="openblock">
+<div class="content">
+<div class="paragraph">
+<p><a href="architecture.html"><strong>Option 1: Deep Dive into the Architecture Stack</strong></a><br>
+<strong>(Recommended for Architects &amp; Platform Engineers needing the technical "how".)</strong></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>+</p>
+</div>
+<div class="openblock">
+<div class="content">
+<div class="paragraph">
+<p><a href="lab-setup.html"><strong>Option 2: Skip straight to the Hands-On Lab</strong></a><br>
+<strong>(Recommended for Developers who want to deploy "Hello World" immediately.)</strong></p>
+</div>
+</div>
 </div>
 </div>
 </div>
 <nav class="pagination">
-  <span class="prev"><a href="index.html">Introduction &amp; Value</a></span>
+  <span class="prev"><a href="../index.html">Introduction &amp; Value</a></span>
   <span class="next"><a href="section2.html">Taxonomy &amp; Reference</a></span>
 </nav>
 </article>

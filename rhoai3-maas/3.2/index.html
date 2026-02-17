@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Making Models as a Service (MaaS) Work for You :: Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</title>
-    <link rel="next" href="chapter1/index.html">
+    <link rel="next" href="chapter1/section1.html">
     <meta name="generator" content="Antora 3.1.3">
     <link rel="stylesheet" href="../../_/css/site.css">
     <script>var uiRootPath = '../../_'</script>
@@ -46,9 +46,6 @@
   <li class="nav-item" data-depth="0">
 <ul class="nav-list">
   <li class="nav-item" data-depth="1">
-    <a class="nav-link" href="chapter1/index.html">Introduction &amp; Value</a>
-  </li>
-  <li class="nav-item" data-depth="1">
     <a class="nav-link" href="chapter1/section1.html">Strategy Guide (Well-Lit Paths)</a>
   </li>
   <li class="nav-item" data-depth="1">
@@ -59,9 +56,6 @@
   </li>
   <li class="nav-item" data-depth="1">
     <a class="nav-link" href="chapter1/section4.html">Hands-On Lab</a>
-  </li>
-  <li class="nav-item" data-depth="1">
-    <a class="nav-link" href="chapter1/section5.html">Troubleshooting</a>
   </li>
   <li class="nav-item" data-depth="1">
     <a class="nav-link" href="chapter1/quiz.html">Quiz</a>
@@ -107,178 +101,145 @@
 </aside>
 <article class="doc">
 <h1 class="page">Making Models as a Service (MaaS) Work for You</h1>
-<h1 id="_models_as_a_service_from_ticket_based_blockers_to_api_first_utility" class="sect0"><a class="anchor" href="#_models_as_a_service_from_ticket_based_blockers_to_api_first_utility"></a>Models as a Service: From Ticket-Based Blockers to API-First Utility</h1>
+<h1 id="_industrializing_ai_the_business_case_for_models_as_a_service" class="sect0"><a class="anchor" href="#_industrializing_ai_the_business_case_for_models_as_a_service"></a>Industrializing AI: The Business Case for Models as a Service</h1>
 <div class="paragraph lead">
-<p><strong>The "Old Way" is manual, slow, and risky. The "New Way" is industrialized.</strong></p>
+<p><strong>Stop treating AI like a science project. Start running it like a factory.</strong></p>
 </div>
 <div class="paragraph">
-<p>In a mature platform, developers do not file tickets to get a database. They call an API. They get a connection string. They build.</p>
+<p>In the early days of enterprise AI, data scientists were explorers. They requested hardware, downloaded models to their laptops, and ran experiments in isolation.</p>
 </div>
 <div class="paragraph">
-<p>Yet in many AI organizations, data scientists still wait on IT for GPU access. Expensive accelerators sit idle while requests queue. "Shadow AI" creeps in when teams bypass governance to get work done—creating security and compliance risk.</p>
+<p>Today, that model is broken.</p>
 </div>
 <div class="paragraph">
-<p>This is the <strong>ticket-based</strong> trap. It blocks velocity, burns budget, and forces trade-offs between control and speed.</p>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-<div class="title">The Core Sales Objection</div>
-<div class="paragraph">
-<p><strong>"Why can&#8217;t we just use public APIs (OpenAI, etc.) and avoid building our own inference platform?"</strong></p>
+<p>As demand for Generative AI explodes, the "ticket-based" workflow—where teams file IT tickets to reserve GPUs—has become a bottleneck. Expensive H100s sit idle at night while teams fight for capacity during the day. "Shadow AI" proliferates as frustrated developers bypass IT to use public APIs, leaking proprietary data.</p>
 </div>
 <div class="paragraph">
-<p><strong>Cost:</strong> Public APIs scale with usage in a way that can explode at enterprise volume. <strong>Security:</strong> Traffic and data leave your perimeter. <strong>Control:</strong> You cannot guarantee SLOs when you share infrastructure with "noisy neighbors." MaaS gives you a centralized, private, API-first utility—so you pay for capacity you own and govern.</p>
-</div>
-</td>
-</tr>
-</table>
+<p><strong>Models as a Service (MaaS)</strong> on Red Hat OpenShift AI 3.x is the answer. It is the shift from manual, static deployments to a <strong>centralized, API-first utility</strong> that optimizes cost, enforces security, and guarantees performance.</p>
 </div>
 <div class="sect1">
-<h2 id="_the_solution_models_as_a_service_maas"><a class="anchor" href="#_the_solution_models_as_a_service_maas"></a>The Solution: Models as a Service (MaaS)</h2>
+<h2 id="_the_core_objection_why_not_just_use_a_public_api"><a class="anchor" href="#_the_core_objection_why_not_just_use_a_public_api"></a>The Core Objection: "Why not just use a Public API?"</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p><strong>Models as a Service (MaaS)</strong> on Red Hat OpenShift AI 3.x turns inference into an <strong>industrialized utility</strong>. Instead of one-off deployments and ticket-based access, you provide a centralized platform where:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p><strong>vLLM</strong> serves as the high-performance inference engine.</p>
-</li>
-<li>
-<p><strong>Gateway API</strong> (replacing legacy Routes) handles routing and traffic shaping.</p>
-</li>
-<li>
-<p><strong>Kuadrant</strong> (and related policy layers) enforces governance, rate limiting, and Zero Trust.</p>
-</li>
-</ul>
+<p>This is the first question every CTO asks: <em>"Why build this? Why not just point our developers to OpenAI or Anthropic?"</em></p>
 </div>
 <div class="paragraph">
-<p>Resources are shared dynamically. Endpoints are secured by policy. Data scientists and applications consume AI through a <strong>single, governed API</strong>—no tickets, no shadow deployments.</p>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_three_pillars_of_value"><a class="anchor" href="#_three_pillars_of_value"></a>Three Pillars of Value</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>By adopting MaaS, you unlock three capabilities that ad-hoc or public-API approaches cannot match:</p>
-</div>
-<div class="sect2">
-<h3 id="_1_efficiency_gpu_slicing_dynamic_sharing"><a class="anchor" href="#_1_efficiency_gpu_slicing_dynamic_sharing"></a>1. Efficiency ("GPU Slicing &amp; Dynamic Sharing")</h3>
-<div class="paragraph">
-<p>Idle GPUs are the hidden tax of AI infrastructure. Single-tenant, ticket-allocated models leave capacity unused during off-peak hours.</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p><strong>The Win:</strong> MaaS enables <strong>dynamic resource sharing</strong> and, where supported, <strong>GPU slicing</strong> (e.g., time-slicing, MIG) so multiple workloads or tenants share the same hardware.</p>
-</li>
-<li>
-<p><strong>The Benefit:</strong> Lower TCO. You maximize utilization instead of over-provisioning for peak.</p>
-</li>
-</ul>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_2_security_governance_zero_trust_private_network"><a class="anchor" href="#_2_security_governance_zero_trust_private_network"></a>2. Security &amp; Governance ("Zero Trust, Private Network")</h3>
-<div class="paragraph">
-<p>When inference runs on someone else&#8217;s cloud, your prompts and data leave your control. When every team deploys their own "quick" endpoint, you lose visibility and policy enforcement.</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p><strong>The Win:</strong> Traffic stays on your <strong>private network</strong>. Kuadrant and Gateway API let you apply rate limits, auth, and governance at the edge.</p>
-</li>
-<li>
-<p><strong>The Benefit:</strong> Zero Trust posture. Guaranteed compliance. No shadow AI.</p>
-</li>
-</ul>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_3_simplicity_performance_api_first_guaranteed_slos"><a class="anchor" href="#_3_simplicity_performance_api_first_guaranteed_slos"></a>3. Simplicity &amp; Performance ("API-First, Guaranteed SLOs")</h3>
-<div class="paragraph">
-<p>Developers and data scientists should consume AI via a <strong>stable, OpenAI-compatible API</strong>. They should not care which node runs the model—only that latency and availability meet SLOs.</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p><strong>The Win:</strong> A single, well-routed API surface. <strong>Disaggregated inference</strong> (where applicable) separates heavy prefill from decode so that "noisy neighbors" do not kill latency.</p>
-</li>
-<li>
-<p><strong>The Benefit:</strong> Predictable Time to First Token (TTFT). Guaranteed SLOs without fighting for dedicated capacity.</p>
-</li>
-</ul>
-</div>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_your_mission_industrialize_ai"><a class="anchor" href="#_your_mission_industrialize_ai"></a>Your Mission: Industrialize AI</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>In this course, you will move from the "Old Way" (manual, ticket-based, risky) to the "New Way" (MaaS, API-first, governed).</p>
-</div>
-<div class="paragraph">
-<p>You will take on the role of a <strong>Platform Engineer or Architect</strong> and execute the following workflow:</p>
+<p>Public APIs are excellent for prototyping, but they fail at enterprise scale for three reasons:</p>
 </div>
 <div class="olist arabic">
 <ol class="arabic">
 <li>
-<p><strong>Strategy:</strong> Compare deployment options—single-model (KServe/TGIS) vs. MaaS (vLLM + llm-d)—and choose the right path for high-concurrency, shared API access.</p>
+<p><strong>The Cost Explosion:</strong> Public APIs charge per token. As you scale to thousands of employees and automated agents, costs become unpredictable and linear. MaaS allows you to <strong>cap your costs</strong> by owning the compute.</p>
 </li>
 <li>
-<p><strong>Taxonomy:</strong> Master the terms—MaaS, vLLM, Gateway API, Kuadrant—so you can design and operate the stack.</p>
+<p><strong>The Privacy Gap:</strong> Sending sensitive IP, PII, or financial data to a public endpoint violates Zero Trust principles. With MaaS, traffic never leaves your cluster.</p>
 </li>
 <li>
-<p><strong>Architecture:</strong> Understand the full stack (hardware, engine, routing, auth) and how scaling and observability work (KEDA, TTFT).</p>
-</li>
-<li>
-<p><strong>Hands-On:</strong> Install and configure OpenShift AI 3.x, enable KServe and the dashboard, deploy an LLMInferenceService with vLLM, and test with an OpenAI-compatible <code>curl</code>.</p>
+<p><strong>The "Noisy Neighbor" Latency:</strong> Public APIs offer no SLA on latency. In a mission-critical app, a 3-second pause is a failure. MaaS gives you predictable <strong>Time-To-First-Token (TTFT)</strong>.</p>
 </li>
 </ol>
 </div>
-<div class="admonitionblock important">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-important" title="Important"></i>
-</td>
-<td class="content">
-<div class="title">Prerequisites</div>
-<div class="paragraph">
-<p>To successfully complete the hands-on sections of this course, you need:</p>
 </div>
+</div>
+<div class="sect1">
+<h2 id="_the_3_pillars_of_maas_value"><a class="anchor" href="#_the_3_pillars_of_maas_value"></a>The 3 Pillars of MaaS Value</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Red Hat OpenShift AI 3.x introduces specific features to solve these challenges.</p>
+</div>
+<div class="sect2">
+<h3 id="_1_economic_efficiency_the_idle_iron_problem"><a class="anchor" href="#_1_economic_efficiency_the_idle_iron_problem"></a>1. Economic Efficiency (The "Idle Iron" Problem)</h3>
 <div class="ulist">
 <ul>
 <li>
-<p>Access to an <strong>OpenShift cluster</strong> with Red Hat OpenShift AI 3.x (channel <code>fast-3.x</code> or equivalent).</p>
+<p><strong>The Problem:</strong> A single model rarely utilizes 100% of an A100 GPU 100% of the time. If you dedicate one GPU per team, you are paying for idle silicon.</p>
 </li>
 <li>
-<p>Permissions to install or configure the <strong>OpenShift AI Operator</strong>, <strong>KServe</strong>, and <strong>Dashboard</strong>.</p>
-</li>
-<li>
-<p>The <code>oc</code> CLI and (for testing) <code>curl</code> or a similar HTTP client.</p>
+<p><strong>The MaaS Solution:</strong> <strong>Dynamic GPU Slicing &amp; Sharing.</strong>
+Using technologies like <strong>MIG (Multi-Instance GPU)</strong> and the <strong>vLLM</strong> runtime, MaaS allows you to partition a single physical GPU into multiple "slices." You can run 4 distinct small models on one card, or serve 50 different teams from a shared pool, driving your hardware utilization from 20% to 80%.</p>
 </li>
 </ul>
 </div>
-</td>
-</tr>
-</table>
 </div>
-<hr>
+<div class="sect2">
+<h3 id="_2_governance_at_the_edge_the_wild_west_problem"><a class="anchor" href="#_2_governance_at_the_edge_the_wild_west_problem"></a>2. Governance at the Edge (The "Wild West" Problem)</h3>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>The Problem:</strong> Once a model is deployed, who is using it? How much? Are they authorized?</p>
+</li>
+<li>
+<p><strong>The MaaS Solution:</strong> <strong>Token-Aware Rate Limiting.</strong>
+RHOAI 3.x integrates <strong>Kuadrant</strong> and the <strong>Gateway API</strong>. Unlike standard load balancers that only count "requests," Kuadrant counts <strong>tokens</strong>. You can create strict policies (e.g., "The Marketing Team gets 1M tokens/day; Engineering gets 5M"). This prevents a single runaway script from draining your budget or crashing the system.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_3_developer_velocity_the_friction_problem"><a class="anchor" href="#_3_developer_velocity_the_friction_problem"></a>3. Developer Velocity (The "Friction" Problem)</h3>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>The Problem:</strong> Developers don&#8217;t want to learn Kubernetes, KServe, or Pod specs. They just want an endpoint.</p>
+</li>
+<li>
+<p><strong>The MaaS Solution:</strong> <strong>Standardized APIs.</strong>
+The platform exposes an <strong>OpenAI-compatible schema</strong>. Developers simply change the <code>base_url</code> in their code. They don&#8217;t know (or care) if the model is running on an NVIDIA H100 or an Intel Gaudi accelerator; they just get a response.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_your_learning_journey"><a class="anchor" href="#_your_learning_journey"></a>Your Learning Journey</h2>
+<div class="sectionbody">
 <div class="paragraph">
-<p><strong>Ready to choose your path? Continue to the Strategy guide (Well-Lit Paths).</strong></p>
+<p>This course transforms you from a "Cluster Admin" into an "AI Platform Architect."</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 75%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Module</th>
+<th class="tableblock halign-left valign-top">What You Will Learn</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>1. Strategy (The Choice)</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Stop guessing. Learn when to use <strong>Dedicated Serving</strong> (for massive, single models) vs. <strong>MaaS/Distributed Serving</strong> (for shared, high-concurrency APIs).</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>2. Taxonomy (The Language)</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Master the RHOAI 3.x vocabulary: <strong>vLLM</strong> (The Engine), <strong>Gateway API</strong> (The Router), and <strong>TrustyAI</strong> (The Watchdog).</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>3. Architecture (The Blueprint)</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A deep dive into the stack: How <strong>KEDA</strong> scales based on queue depth and how <strong>Authorino</strong> enforces Zero Trust.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>4. Lab (The Build)</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Hands-on:</strong> You will deploy the OpenShift AI Operator, configure the <strong>Gateway</strong>, deploy a model with <strong>vLLM</strong>, and apply a <strong>Rate Limit Policy</strong> to block abusive traffic.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph text-center">
+<p><strong>Ready to build the factory?</strong><br>
+<a href="strategy.html"><strong>Step 1: Choose Your Strategy (Dedicated vs. MaaS) &gt;</strong></a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-none hljs"></code></pre>
+</div>
 </div>
 </div>
 </div>
 <nav class="pagination">
-  <span class="next"><a href="chapter1/index.html">Introduction &amp; Value</a></span>
+  <span class="next"><a href="chapter1/section1.html">Strategy Guide (Well-Lit Paths)</a></span>
 </nav>
 </article>
   </div>

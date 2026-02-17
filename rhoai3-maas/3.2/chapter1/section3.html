@@ -3,10 +3,10 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>The MaaS Stack: Architecture Deep Dive :: Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</title>
+    <title>Lab: Build Your MaaS Factory :: Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</title>
     <link rel="prev" href="section2.html">
     <link rel="next" href="section4.html">
-    <meta name="description" content="The full MaaS stack—hardware, vLLM, Gateway API, auth—plus scaling (KEDA) and observability (TTFT).">
+    <meta name="description" content="A step-by-step guide to deploying a model with vLLM, exposing it via Kubernetes Gateway API, and enforcing rate limits with Kuadrant.">
     <meta name="generator" content="Antora 3.1.3">
     <link rel="stylesheet" href="../../../_/css/site.css">
     <script>var uiRootPath = '../../../_'</script>
@@ -48,9 +48,6 @@
   <li class="nav-item" data-depth="0">
 <ul class="nav-list">
   <li class="nav-item" data-depth="1">
-    <a class="nav-link" href="index.html">Introduction &amp; Value</a>
-  </li>
-  <li class="nav-item" data-depth="1">
     <a class="nav-link" href="section1.html">Strategy Guide (Well-Lit Paths)</a>
   </li>
   <li class="nav-item" data-depth="1">
@@ -61,9 +58,6 @@
   </li>
   <li class="nav-item" data-depth="1">
     <a class="nav-link" href="section4.html">Hands-On Lab</a>
-  </li>
-  <li class="nav-item" data-depth="1">
-    <a class="nav-link" href="section5.html">Troubleshooting</a>
   </li>
   <li class="nav-item" data-depth="1">
     <a class="nav-link" href="quiz.html">Quiz</a>
@@ -108,173 +102,281 @@
   <div class="toc-menu"></div>
 </aside>
 <article class="doc">
-<h1 class="page">The MaaS Stack: Architecture Deep Dive</h1>
+<h1 class="page">Lab: Build Your MaaS Factory</h1>
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph lead">
-<p><strong>From GPU to API: understanding the machinery under the hood.</strong></p>
+<p><strong>Theory is over. It is time to build.</strong></p>
 </div>
 <div class="paragraph">
-<p>To run MaaS at scale, you need a clear mental model of the stack. This section walks through the layers: hardware, inference engine, routing, and auth—and how scaling and observability fit in.</p>
+<p>In this lab, you will act as the Platform Engineer. You will not just "run a container." You will build a governed manufacturing line.</p>
+</div>
+<div class="paragraph">
+<p>You will deploy a Lightweight LLM (Granite-7B or similar), expose it through the new <strong>Gateway API</strong>, and apply a <strong>Token-Aware Rate Limit</strong> to prevent cost overruns.</p>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+<div class="title">Prerequisites</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>OpenShift Container Platform 4.16+</strong></p>
+</li>
+<li>
+<p><strong>Red Hat OpenShift AI Operator</strong> (Channel <code>fast-3.x</code>) installed.</p>
+</li>
+<li>
+<p><strong>Red Hat OpenShift Service Mesh</strong> (for Gateway API implementation) installed.</p>
+</li>
+<li>
+<p><strong>Kuadrant Operator</strong> installed (for Rate Limiting).</p>
+</li>
+<li>
+<p>Access to a namespace with <strong>GPU quota</strong> (at least 1 NVIDIA A10G/A100 or equivalent).</p>
+</li>
+<li>
+<p>The <code>oc</code> CLI tool logged in.</p>
+</li>
+</ul>
+</div>
+</td>
+</tr>
+</table>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_the_stack_bottom_to_top"><a class="anchor" href="#_the_stack_bottom_to_top"></a>The Stack (Bottom to Top)</h2>
-<div class="sectionbody">
-<div class="sect2">
-<h3 id="_1_hardware_layer_gpus_mig"><a class="anchor" href="#_1_hardware_layer_gpus_mig"></a>1. Hardware Layer (GPUs, MIG)</h3>
-<div class="paragraph">
-<p>At the foundation are the physical accelerators. For production MaaS:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p><strong>GPU types:</strong> NVIDIA A100, H100, or similar data-center GPUs are typical. Consumer-grade GPUs are not supported for production serving.</p>
-</li>
-<li>
-<p><strong>MIG (Multi-Instance GPU):</strong> Where supported (e.g., A100), MIG allows you to partition a single GPU into isolated instances. This supports <strong>GPU slicing</strong>—multiple smaller workloads sharing one physical card with guaranteed isolation.</p>
-</li>
-</ul>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_2_inference_engine_vllm"><a class="anchor" href="#_2_inference_engine_vllm"></a>2. Inference Engine (vLLM)</h3>
-<div class="paragraph">
-<p>vLLM runs in pods that request GPU resources. It:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>Loads model weights (from OCI images, S3, or other configured sources).</p>
-</li>
-<li>
-<p>Serves OpenAI-compatible endpoints (e.g., <code>/v1/chat/completions</code>).</p>
-</li>
-<li>
-<p>Uses PagedAttention and continuous batching for high throughput.</p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p>In the <strong>MaaS/distributed</strong> path, <strong>llm-d</strong> sits above vLLM to schedule and route requests (e.g., cache-aware routing, prefill/decode disaggregation).</p>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_3_routing_layer_gateway_api"><a class="anchor" href="#_3_routing_layer_gateway_api"></a>3. Routing Layer (Gateway API)</h3>
-<div class="paragraph">
-<p>The <strong>Gateway API</strong> is the "front door" for inference traffic. It:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>Receives HTTP/HTTPS requests from clients.</p>
-</li>
-<li>
-<p>Routes them to the correct backend (vLLM service) based on host, path, or other rules.</p>
-</li>
-<li>
-<p>Replaces or complements legacy OpenShift Routes with a more flexible, policy-aware model.</p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p>Traffic flows: <strong>Client → Gateway API → (policy/Kuadrant) → vLLM (or llm-d proxy) → vLLM pod.</strong></p>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_4_auth_governance_authorino_kuadrant"><a class="anchor" href="#_4_auth_governance_authorino_kuadrant"></a>4. Auth &amp; Governance (Authorino, Kuadrant)</h3>
-<div class="paragraph">
-<p>Before (or at) the Gateway, <strong>Kuadrant</strong> and optionally <strong>Authorino</strong> enforce:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p><strong>Rate limiting:</strong> So one consumer cannot starve others.</p>
-</li>
-<li>
-<p><strong>Authentication:</strong> API keys, OIDC, or other mechanisms.</p>
-</li>
-<li>
-<p><strong>Authorization:</strong> Who can call which model or endpoint.</p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p>This gives you <strong>Zero Trust</strong> and guaranteed SLOs without "noisy neighbors" overwhelming the system.</p>
-</div>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_scaling_beyond_cpu_keda"><a class="anchor" href="#_scaling_beyond_cpu_keda"></a>Scaling: Beyond CPU (KEDA)</h2>
+<h2 id="_step_1_initialize_the_workspace"><a class="anchor" href="#_step_1_initialize_the_workspace"></a>Step 1: Initialize the Workspace</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>MaaS scaling should be <strong>event-driven</strong>, not only CPU-based.</p>
+<p>First, create a project for your MaaS utility.</p>
 </div>
-<div class="ulist">
-<ul>
-<li>
-<p><strong>KEDA</strong> (Kubernetes Event-Driven Autoscaling) can scale inference workloads based on:</p>
-</li>
-<li>
-<p>Queue depth (e.g., number of requests waiting).</p>
-</li>
-<li>
-<p>Token count or other custom metrics exposed by vLLM/llm-d.</p>
-</li>
-<li>
-<p><strong>Why it matters:</strong> Scaling on CPU alone often lags real demand. Scaling on queue depth or token throughput keeps latency stable under bursty traffic.</p>
-</li>
-</ul>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_observability_time_to_first_token_ttft"><a class="anchor" href="#_observability_time_to_first_token_ttft"></a>Observability: Time to First Token (TTFT)</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>The most user-visible metric for inference is <strong>Time to First Token (TTFT)</strong>.</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p><strong>What it is:</strong> Latency from the moment the request is sent until the first token of the response is streamed.</p>
-</li>
-<li>
-<p><strong>Why it matters:</strong> Users perceive responsiveness by TTFT. Guaranteeing SLOs means tracking TTFT (e.g., p95, p99) and alerting when it degrades.</p>
-</li>
-<li>
-<p><strong>Where to get it:</strong> Prometheus metrics from vLLM/llm-d (e.g., <code>vllm_llmd_time_to_first_token_seconds</code>) and dashboards (Grafana, OpenShift Observability).</p>
-</li>
-</ul>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_summary_diagram_conceptual"><a class="anchor" href="#_summary_diagram_conceptual"></a>Summary Diagram (Conceptual)</h2>
-<div class="sectionbody">
-<div class="literalblock">
+<div class="listingblock">
 <div class="content">
-<pre>  Clients
-     |
-     v
-  Gateway API  &lt;-- Kuadrant (rate limit, policy)
-     |
-     v
-  llm-d (scheduler) [when using MaaS/distributed path]
-     |
-     v
-  vLLM pods (inference engine)
-     |
-     v
-  GPUs (MIG / time-slicing where applicable)
-[/literal]</pre>
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc new-project maas-production</code></pre>
 </div>
 </div>
-<hr>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_2_deploy_the_inference_engine_vllm"><a class="anchor" href="#_step_2_deploy_the_inference_engine_vllm"></a>Step 2: Deploy the Inference Engine (vLLM)</h2>
+<div class="sectionbody">
 <div class="paragraph">
-<p><strong>Now that you understand the architecture, proceed to the Lab to install, configure, and deploy.</strong></p>
+<p>We will define a <code>ServingRuntime</code> that tells OpenShift AI how to run the vLLM engine, and an <code>InferenceService</code> to deploy the specific model.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>Create the ServingRuntime (vllm-runtime.yaml):</strong></p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: serving.kserve.io/v1alpha1
+kind: ServingRuntime
+metadata:
+  name: vllm-runtime
+  namespace: maas-production
+spec:
+  supportedModelFormats:
+    - name: vLLM
+      version: "1"
+      autoSelect: true
+  multiModel: false
+  containers:
+    - name: kserve-container
+      image: quay.io/modh/vllm:stable
+      command: ["python3", "-m", "vllm.entrypoints.openai.api_server"]
+      args:
+        - "--model=/mnt/models"
+        - "--port=8080"
+        - "--gpu-memory-utilization=0.9"
+      resources:
+        requests:
+          cpu: "4"
+          memory: "16Gi"
+          nvidia.com/gpu: "1"
+        limits:
+          nvidia.com/gpu: "1"</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p><strong>Deploy the Model (granite-service.yaml):</strong></p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: serving.kserve.io/v1beta1
+kind: InferenceService
+metadata:
+  name: granite-7b
+  namespace: maas-production
+spec:
+  predictor:
+    model:
+      modelFormat:
+        name: vLLM
+      runtime: vllm-runtime
+      storage:
+        key: aws-connection-secret # Assuming you have configured S3 storage
+        path: models/granite-7b-lab</code></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f vllm-runtime.yaml
+oc apply -f granite-service.yaml</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Checkpoint:</strong> Run <code>oc get pods</code> and wait until the <code>granite-7b-predictor</code> pod is <strong>Running</strong>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_3_configure_the_front_door_gateway_api"><a class="anchor" href="#_step_3_configure_the_front_door_gateway_api"></a>Step 3: Configure the Front Door (Gateway API)</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In RHOAI 3.x, we use the Gateway API to route traffic. This separates the "Infrastructure" from the "Model."</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>Create the HTTPRoute (model-route.yaml):</strong></p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: gateway.networking.k8s.io/v1beta1
+kind: HTTPRoute
+metadata:
+  name: granite-route
+  namespace: maas-production
+spec:
+  parentRefs:
+    - name: maas-gateway
+      namespace: istio-system # or where your Gateway is defined
+  hostnames:
+    - "api.maas.example.com"
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /v1/completions
+      backendRefs:
+        - name: granite-7b-predictor
+          port: 8080</code></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f model-route.yaml</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_4_apply_governance_kuadrant"><a class="anchor" href="#_step_4_apply_governance_kuadrant"></a>Step 4: Apply Governance (Kuadrant)</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Now, we solve the "Why Buy" challenge. We will apply a policy that limits users to <strong>5 requests every 10 seconds</strong> to prevent abuse.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>Create the RateLimitPolicy (safety-limit.yaml):</strong></p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: kuadrant.io/v1beta2
+kind: RateLimitPolicy
+metadata:
+  name: granite-protection
+  namespace: maas-production
+spec:
+  targetRef:
+    group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: granite-route
+  limits:
+    "basic-tier":
+      rates:
+        - limit: 5
+          window: 10s</code></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f safety-limit.yaml</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_5_verification_stress_test"><a class="anchor" href="#_step_5_verification_stress_test"></a>Step 5: Verification &amp; Stress Test</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Let&#8217;s prove the factory works and the guards are active.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>Test 1: A Valid Request (The "Happy Path")</strong></p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">curl -X POST "http://api.maas.example.com/v1/completions" \
+     -H "Content-Type: application/json" \
+     -d '{"model": "granite-7b", "prompt": "Define industrialized AI.", "max_tokens": 50}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Result:</strong> You should receive a JSON response with the definition.</p>
+</div>
+</li>
+<li>
+<p><strong>Test 2: The Stress Test (The "Governance Path")</strong></p>
+<div class="paragraph">
+<p>Run this loop to simulate a "noisy neighbor" or a runaway script:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">for i in {1..20}; do
+  curl -o /dev/null -s -w "%{http_code}\n" -X POST "http://api.maas.example.com/v1/completions" \
+  -H "Content-Type: application/json" \
+  -d '{"model": "granite-7b", "prompt": "spam", "max_tokens": 10}'
+done</code></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p><strong>Result:</strong>
+You will see <code>200</code> (Success) for the first 5 requests.
+Then, you will see <code>429</code> (Too Many Requests) for the rest.</p>
+</div>
+<div class="paragraph">
+<p><strong>Congratulations.</strong> You have successfully deployed a MaaS architecture that is:
+1.  <strong>Efficient</strong> (Shared vLLM Runtime).
+2.  <strong>Accessible</strong> (Standard Gateway API).
+3.  <strong>Governed</strong> (Kuadrant Rate Limiting).</p>
+</div>
+<div class="paragraph text-center">
+<p><strong>You have built the factory. Now, keep it running.</strong><br>
+<a href="troubleshooting.html"><strong>Next: Day-2 Operations &amp; Troubleshooting &gt;</strong></a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-none hljs"></code></pre>
+</div>
 </div>
 </div>
 </div>
