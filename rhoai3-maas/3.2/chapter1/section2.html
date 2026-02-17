@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>MaaS Taxonomy: Terms and Definitions :: Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</title>
+    <link rel="prev" href="section1.html">
+    <link rel="next" href="section3.html">
+    <meta name="description" content="Glossary of MaaS-related terms—vLLM, Gateway API, Kuadrant, and related concepts.">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/REPLACEREPONAME/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="rhoai3-maas" data-version="3.2">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Introduction &amp; Value</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="index.html">Introduction &amp; Value</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="section1.html">Strategy Guide (Well-Lit Paths)</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="1">
+    <a class="nav-link" href="section2.html">Taxonomy &amp; Reference</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="section3.html">Architecture Deep Dive</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="section4.html">Hands-On Lab</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="section5.html">Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="quiz.html">Quiz</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</span>
+    <span class="version">3.2</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">3.2</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</a></li>
+    <li><a href="section2.html">Taxonomy &amp; Reference</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">MaaS Taxonomy: Terms and Definitions</h1>
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph lead">
+<p><strong>To operate the stack, you must speak its language.</strong></p>
+</div>
+<div class="paragraph">
+<p>Use this page as a quick reference for the key terms in the Models-as-a-Service architecture on Red Hat OpenShift AI 3.x.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_core_terms"><a class="anchor" href="#_core_terms"></a>Core Terms</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_maas_models_as_a_service"><a class="anchor" href="#_maas_models_as_a_service"></a>MaaS (Models as a Service)</h3>
+<div class="paragraph">
+<p>A <strong>centralized AI inference utility</strong> where multiple models and consumers are served through a single, governed API. Resources (e.g., GPUs) can be shared dynamically; access and rate are controlled by policy. Contrast with "one deployment per model per team" or public APIs.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_vllm"><a class="anchor" href="#_vllm"></a>vLLM</h3>
+<div class="paragraph">
+<p>The <strong>inference engine</strong> used in the MaaS stack. vLLM is a high-performance, open-source server for LLMs that supports continuous batching, PagedAttention, and OpenAI-compatible APIs. In OpenShift AI 3.x, vLLM is the default engine for LLM inference when using the MaaS/distributed path.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_gateway_api"><a class="anchor" href="#_gateway_api"></a>Gateway API</h3>
+<div class="paragraph">
+<p>The <strong>routing layer</strong> that replaces or complements legacy OpenShift Routes. Gateway API provides a standard way to define HTTP routes, backends, and traffic splitting. In the MaaS context, it is the "front door" through which inference requests are routed to the appropriate vLLM (or other) backends.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_kuadrant"><a class="anchor" href="#_kuadrant"></a>Kuadrant</h3>
+<div class="paragraph">
+<p>The <strong>policy and governance engine</strong> for APIs. Kuadrant provides rate limiting, authentication, and other policies that apply to traffic entering via the Gateway API. It enables Zero Trust and guaranteed SLOs by controlling who can call what and at what rate.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_authorino_when_referenced"><a class="anchor" href="#_authorino_when_referenced"></a>Authorino (when referenced)</h3>
+<div class="paragraph">
+<p>An <strong>auth layer</strong> that can integrate with the Gateway to enforce authentication and authorization (e.g., API keys, OIDC) before requests reach the inference backend. Often used alongside Kuadrant for full governance.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_llm_d_distributed_inference"><a class="anchor" href="#_llm_d_distributed_inference"></a>llm-d (Distributed Inference)</h3>
+<div class="paragraph">
+<p>When using the <strong>MaaS/distributed</strong> path, <strong>llm-d</strong> is the component that orchestrates inference across multiple vLLM instances. It handles scheduling, cache-aware routing (e.g., KV cache affinity), and disaggregation (prefill vs. decode) so that high concurrency and SLOs can be met.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_keda_kubernetes_event_driven_autoscaling"><a class="anchor" href="#_keda_kubernetes_event_driven_autoscaling"></a>KEDA (Kubernetes Event-Driven Autoscaling)</h3>
+<div class="paragraph">
+<p>Used in the MaaS stack to <strong>scale inference workloads</strong> based on queue depth, token count, or other metrics—not just CPU. This allows the platform to scale up when demand spikes and scale down when idle, improving ROI.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_ttft_time_to_first_token"><a class="anchor" href="#_ttft_time_to_first_token"></a>TTFT (Time to First Token)</h3>
+<div class="paragraph">
+<p>A key <strong>observability metric</strong> for inference. TTFT measures the latency from request submission to the first token of the response. Low, stable TTFT is critical for user experience and SLOs.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_quick_reference"><a class="anchor" href="#_quick_reference"></a>Quick Reference</h2>
+<div class="sectionbody">
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"><strong>Term</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Role in MaaS</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">MaaS</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Centralized AI utility; API-first, governed</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vLLM</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Inference engine (serves the model)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Gateway API</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Routing layer (replaces/supplements Routes)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Kuadrant</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Policy, rate limiting, governance</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">llm-d</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Distributed inference orchestration (scheduling, routing)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">KEDA</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Event-driven autoscaling (queue, tokens)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TTFT</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Observability: time to first token</p></td>
+</tr>
+</tbody>
+</table>
+<hr>
+<div class="paragraph">
+<p><strong>Next: See how these pieces fit together in the Architecture Deep Dive.</strong></p>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="section1.html">Strategy Guide (Well-Lit Paths)</a></span>
+  <span class="next"><a href="section3.html">Architecture Deep Dive</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

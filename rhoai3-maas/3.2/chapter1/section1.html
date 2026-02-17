@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Choosing Your Path: Single-Model vs. MaaS (Well-Lit Paths) :: Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</title>
+    <link rel="prev" href="index.html">
+    <link rel="next" href="section2.html">
+    <meta name="description" content="Compare deployment options—KServe/TGIS for dedicated workloads vs. vLLM + llm-d for MaaS and high concurrency.">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/REPLACEREPONAME/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="rhoai3-maas" data-version="3.2">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Introduction &amp; Value</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="index.html">Introduction &amp; Value</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="1">
+    <a class="nav-link" href="section1.html">Strategy Guide (Well-Lit Paths)</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="section2.html">Taxonomy &amp; Reference</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="section3.html">Architecture Deep Dive</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="section4.html">Hands-On Lab</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="section5.html">Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="quiz.html">Quiz</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</span>
+    <span class="version">3.2</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">3.2</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</a></li>
+    <li><a href="section1.html">Strategy Guide (Well-Lit Paths)</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Choosing Your Path: Single-Model vs. MaaS (Well-Lit Paths)</h1>
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph lead">
+<p><strong>One size does not fit all. Pick the path that matches your concurrency and governance needs.</strong></p>
+</div>
+<div class="paragraph">
+<p>Not every inference workload needs the same architecture. A single, heavy model serving one high-value application is different from a shared API serving many teams and applications. Red Hat OpenShift AI 3.x supports both. Your job is to choose the right path.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_path_a_single_model_dedicated_heavy_workloads"><a class="anchor" href="#_path_a_single_model_dedicated_heavy_workloads"></a>Path A: Single Model (Dedicated Heavy Workloads)</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><strong>Scenario:</strong> You have one critical model (e.g., a large fine-tuned model) serving a single application or a small set of known consumers. Latency and isolation matter more than multi-tenant sharing.</p>
+</div>
+<div class="paragraph">
+<p><strong>Technology:</strong> <strong>KServe</strong> with runtimes such as <strong>TGIS (Trustworthy Generative AI Service)</strong> or dedicated vLLM deployments.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>How it works:</strong> One InferenceService (or equivalent) per model. Resources are dedicated. No dynamic sharing across tenants.</p>
+</li>
+<li>
+<p><strong>When to use:</strong> Low concurrency, high predictability, or compliance requirements that demand dedicated capacity.</p>
+</li>
+<li>
+<p><strong>Trade-off:</strong> Underutilization during off-peak; you pay for reserved capacity.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_path_b_maas_distributed_high_concurrency_shared_api"><a class="anchor" href="#_path_b_maas_distributed_high_concurrency_shared_api"></a>Path B: MaaS / Distributed (High Concurrency, Shared API)</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><strong>Scenario:</strong> Multiple teams or applications need to call multiple models through a <strong>single, governed API</strong>. You want dynamic sharing, intelligent routing, and SLO guarantees without over-provisioning.</p>
+</div>
+<div class="paragraph">
+<p><strong>Technology:</strong> <strong>vLLM</strong> plus <strong>llm-d</strong> (distributed inference layer), with <strong>Gateway API</strong> for routing and <strong>Kuadrant</strong> for policy. This is the <strong>focus of this course</strong>.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>How it works:</strong> vLLM runs as the inference engine; llm-d handles scheduling, routing, and (where applicable) cache-aware request distribution. Gateway API replaces legacy Routes. Kuadrant enforces rate limits and auth.</p>
+</li>
+<li>
+<p><strong>When to use:</strong> High concurrency, many models or many consumers, need for GPU slicing or disaggregated inference, and requirement for a single API surface with governance.</p>
+</li>
+<li>
+<p><strong>Trade-off:</strong> More moving parts; requires understanding of Gateway API, scaling (e.g., KEDA), and observability (e.g., TTFT).</p>
+</li>
+</ul>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+<div class="title">Strategic Rule of Thumb</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Dedicated, predictable, low concurrency?</strong> Prefer <strong>Path A</strong> (KServe/TGIS or single vLLM).</p>
+</li>
+<li>
+<p><strong>Shared API, high concurrency, governance, and dynamic slicing?</strong> Prefer <strong>Path B</strong> (MaaS with vLLM + llm-d).</p>
+</li>
+</ul>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_the_junction_what_to_do_next"><a class="anchor" href="#_the_junction_what_to_do_next"></a>The Junction: What to Do Next</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>After choosing your path:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Learn the terms:</strong> Continue to the <strong>Taxonomy</strong> guide so you can speak the language of the stack (vLLM, Gateway API, Kuadrant).</p>
+</li>
+<li>
+<p><strong>See the architecture:</strong> Continue to the <strong>Architecture Deep Dive</strong> to understand the full stack (hardware → engine → routing → auth) and how scaling and observability work.</p>
+</li>
+</ul>
+</div>
+<hr>
+<div class="paragraph">
+<p><strong>Next: Master the vocabulary in the Taxonomy guide.</strong></p>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="index.html">Introduction &amp; Value</a></span>
+  <span class="next"><a href="section2.html">Taxonomy &amp; Reference</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

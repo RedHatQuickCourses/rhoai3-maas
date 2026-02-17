@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>The MaaS Stack: Architecture Deep Dive :: Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</title>
+    <link rel="prev" href="section2.html">
+    <link rel="next" href="section4.html">
+    <meta name="description" content="The full MaaS stack—hardware, vLLM, Gateway API, auth—plus scaling (KEDA) and observability (TTFT).">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/REPLACEREPONAME/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="rhoai3-maas" data-version="3.2">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Introduction &amp; Value</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="index.html">Introduction &amp; Value</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="section1.html">Strategy Guide (Well-Lit Paths)</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="section2.html">Taxonomy &amp; Reference</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="1">
+    <a class="nav-link" href="section3.html">Architecture Deep Dive</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="section4.html">Hands-On Lab</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="section5.html">Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="quiz.html">Quiz</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</span>
+    <span class="version">3.2</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">3.2</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</a></li>
+    <li><a href="section3.html">Architecture Deep Dive</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">The MaaS Stack: Architecture Deep Dive</h1>
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph lead">
+<p><strong>From GPU to API: understanding the machinery under the hood.</strong></p>
+</div>
+<div class="paragraph">
+<p>To run MaaS at scale, you need a clear mental model of the stack. This section walks through the layers: hardware, inference engine, routing, and auth—and how scaling and observability fit in.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_the_stack_bottom_to_top"><a class="anchor" href="#_the_stack_bottom_to_top"></a>The Stack (Bottom to Top)</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_1_hardware_layer_gpus_mig"><a class="anchor" href="#_1_hardware_layer_gpus_mig"></a>1. Hardware Layer (GPUs, MIG)</h3>
+<div class="paragraph">
+<p>At the foundation are the physical accelerators. For production MaaS:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>GPU types:</strong> NVIDIA A100, H100, or similar data-center GPUs are typical. Consumer-grade GPUs are not supported for production serving.</p>
+</li>
+<li>
+<p><strong>MIG (Multi-Instance GPU):</strong> Where supported (e.g., A100), MIG allows you to partition a single GPU into isolated instances. This supports <strong>GPU slicing</strong>—multiple smaller workloads sharing one physical card with guaranteed isolation.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_2_inference_engine_vllm"><a class="anchor" href="#_2_inference_engine_vllm"></a>2. Inference Engine (vLLM)</h3>
+<div class="paragraph">
+<p>vLLM runs in pods that request GPU resources. It:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Loads model weights (from OCI images, S3, or other configured sources).</p>
+</li>
+<li>
+<p>Serves OpenAI-compatible endpoints (e.g., <code>/v1/chat/completions</code>).</p>
+</li>
+<li>
+<p>Uses PagedAttention and continuous batching for high throughput.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>In the <strong>MaaS/distributed</strong> path, <strong>llm-d</strong> sits above vLLM to schedule and route requests (e.g., cache-aware routing, prefill/decode disaggregation).</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_3_routing_layer_gateway_api"><a class="anchor" href="#_3_routing_layer_gateway_api"></a>3. Routing Layer (Gateway API)</h3>
+<div class="paragraph">
+<p>The <strong>Gateway API</strong> is the "front door" for inference traffic. It:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Receives HTTP/HTTPS requests from clients.</p>
+</li>
+<li>
+<p>Routes them to the correct backend (vLLM service) based on host, path, or other rules.</p>
+</li>
+<li>
+<p>Replaces or complements legacy OpenShift Routes with a more flexible, policy-aware model.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Traffic flows: <strong>Client → Gateway API → (policy/Kuadrant) → vLLM (or llm-d proxy) → vLLM pod.</strong></p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_4_auth_governance_authorino_kuadrant"><a class="anchor" href="#_4_auth_governance_authorino_kuadrant"></a>4. Auth &amp; Governance (Authorino, Kuadrant)</h3>
+<div class="paragraph">
+<p>Before (or at) the Gateway, <strong>Kuadrant</strong> and optionally <strong>Authorino</strong> enforce:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Rate limiting:</strong> So one consumer cannot starve others.</p>
+</li>
+<li>
+<p><strong>Authentication:</strong> API keys, OIDC, or other mechanisms.</p>
+</li>
+<li>
+<p><strong>Authorization:</strong> Who can call which model or endpoint.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>This gives you <strong>Zero Trust</strong> and guaranteed SLOs without "noisy neighbors" overwhelming the system.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_scaling_beyond_cpu_keda"><a class="anchor" href="#_scaling_beyond_cpu_keda"></a>Scaling: Beyond CPU (KEDA)</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>MaaS scaling should be <strong>event-driven</strong>, not only CPU-based.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>KEDA</strong> (Kubernetes Event-Driven Autoscaling) can scale inference workloads based on:</p>
+</li>
+<li>
+<p>Queue depth (e.g., number of requests waiting).</p>
+</li>
+<li>
+<p>Token count or other custom metrics exposed by vLLM/llm-d.</p>
+</li>
+<li>
+<p><strong>Why it matters:</strong> Scaling on CPU alone often lags real demand. Scaling on queue depth or token throughput keeps latency stable under bursty traffic.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_observability_time_to_first_token_ttft"><a class="anchor" href="#_observability_time_to_first_token_ttft"></a>Observability: Time to First Token (TTFT)</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The most user-visible metric for inference is <strong>Time to First Token (TTFT)</strong>.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>What it is:</strong> Latency from the moment the request is sent until the first token of the response is streamed.</p>
+</li>
+<li>
+<p><strong>Why it matters:</strong> Users perceive responsiveness by TTFT. Guaranteeing SLOs means tracking TTFT (e.g., p95, p99) and alerting when it degrades.</p>
+</li>
+<li>
+<p><strong>Where to get it:</strong> Prometheus metrics from vLLM/llm-d (e.g., <code>vllm_llmd_time_to_first_token_seconds</code>) and dashboards (Grafana, OpenShift Observability).</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_summary_diagram_conceptual"><a class="anchor" href="#_summary_diagram_conceptual"></a>Summary Diagram (Conceptual)</h2>
+<div class="sectionbody">
+<div class="literalblock">
+<div class="content">
+<pre>  Clients
+     |
+     v
+  Gateway API  &lt;-- Kuadrant (rate limit, policy)
+     |
+     v
+  llm-d (scheduler) [when using MaaS/distributed path]
+     |
+     v
+  vLLM pods (inference engine)
+     |
+     v
+  GPUs (MIG / time-slicing where applicable)
+[/literal]</pre>
+</div>
+</div>
+<hr>
+<div class="paragraph">
+<p><strong>Now that you understand the architecture, proceed to the Lab to install, configure, and deploy.</strong></p>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="section2.html">Taxonomy &amp; Reference</a></span>
+  <span class="next"><a href="section4.html">Hands-On Lab</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

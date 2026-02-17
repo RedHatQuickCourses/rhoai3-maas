@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Models as a Service: From Ticket-Based Blockers to API-First Utility :: Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</title>
+    <link rel="prev" href="../index.html">
+    <link rel="next" href="section1.html">
+    <meta name="description" content="The business case for MaaS—efficiency, security, and control on Red Hat OpenShift AI 3.x.">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/REPLACEREPONAME/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="rhoai3-maas" data-version="3.2">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Introduction &amp; Value</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item is-current-page" data-depth="1">
+    <a class="nav-link" href="index.html">Introduction &amp; Value</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="section1.html">Strategy Guide (Well-Lit Paths)</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="section2.html">Taxonomy &amp; Reference</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="section3.html">Architecture Deep Dive</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="section4.html">Hands-On Lab</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="section5.html">Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="quiz.html">Quiz</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</span>
+    <span class="version">3.2</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">3.2</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</a></li>
+    <li><a href="index.html">Introduction &amp; Value</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Models as a Service: From Ticket-Based Blockers to API-First Utility</h1>
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph lead">
+<p><strong>The "Old Way" is manual, slow, and risky. The "New Way" is industrialized.</strong></p>
+</div>
+<div class="paragraph">
+<p>In a mature platform, developers do not file tickets to get a database. They call an API. They get a connection string. They build.</p>
+</div>
+<div class="paragraph">
+<p>Yet in many AI organizations, data scientists still wait on IT for GPU access. Expensive accelerators sit idle while requests queue. "Shadow AI" creeps in when teams bypass governance to get work done—creating security and compliance risk.</p>
+</div>
+<div class="paragraph">
+<p>This is the <strong>ticket-based</strong> trap. It blocks velocity, burns budget, and forces trade-offs between control and speed.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="title">The Core Sales Objection</div>
+<div class="paragraph">
+<p><strong>"Why can&#8217;t we just use public APIs (OpenAI, etc.) and avoid building our own inference platform?"</strong></p>
+</div>
+<div class="paragraph">
+<p><strong>Cost:</strong> Public APIs scale with usage in a way that can explode at enterprise volume. <strong>Security:</strong> Traffic and data leave your perimeter. <strong>Control:</strong> You cannot guarantee SLOs when you share infrastructure with "noisy neighbors." MaaS gives you a centralized, private, API-first utility—so you pay for capacity you own and govern.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_the_solution_models_as_a_service_maas"><a class="anchor" href="#_the_solution_models_as_a_service_maas"></a>The Solution: Models as a Service (MaaS)</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><strong>Models as a Service (MaaS)</strong> on Red Hat OpenShift AI 3.x turns inference into an <strong>industrialized utility</strong>. Instead of one-off deployments and ticket-based access, you provide a centralized platform where:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>vLLM</strong> serves as the high-performance inference engine.</p>
+</li>
+<li>
+<p><strong>Gateway API</strong> (replacing legacy Routes) handles routing and traffic shaping.</p>
+</li>
+<li>
+<p><strong>Kuadrant</strong> (and related policy layers) enforces governance, rate limiting, and Zero Trust.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Resources are shared dynamically. Endpoints are secured by policy. Data scientists and applications consume AI through a <strong>single, governed API</strong>—no tickets, no shadow deployments.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_three_pillars_of_value"><a class="anchor" href="#_three_pillars_of_value"></a>Three Pillars of Value</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>By adopting MaaS, you unlock three capabilities that ad-hoc or public-API approaches cannot match:</p>
+</div>
+<div class="sect2">
+<h3 id="_1_efficiency_gpu_slicing_dynamic_sharing"><a class="anchor" href="#_1_efficiency_gpu_slicing_dynamic_sharing"></a>1. Efficiency ("GPU Slicing &amp; Dynamic Sharing")</h3>
+<div class="paragraph">
+<p>Idle GPUs are the hidden tax of AI infrastructure. Single-tenant, ticket-allocated models leave capacity unused during off-peak hours.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>The Win:</strong> MaaS enables <strong>dynamic resource sharing</strong> and, where supported, <strong>GPU slicing</strong> (e.g., time-slicing, MIG) so multiple workloads or tenants share the same hardware.</p>
+</li>
+<li>
+<p><strong>The Benefit:</strong> Lower TCO. You maximize utilization instead of over-provisioning for peak.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_2_security_governance_zero_trust_private_network"><a class="anchor" href="#_2_security_governance_zero_trust_private_network"></a>2. Security &amp; Governance ("Zero Trust, Private Network")</h3>
+<div class="paragraph">
+<p>When inference runs on someone else&#8217;s cloud, your prompts and data leave your control. When every team deploys their own "quick" endpoint, you lose visibility and policy enforcement.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>The Win:</strong> Traffic stays on your <strong>private network</strong>. Kuadrant and Gateway API let you apply rate limits, auth, and governance at the edge.</p>
+</li>
+<li>
+<p><strong>The Benefit:</strong> Zero Trust posture. Guaranteed compliance. No shadow AI.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_3_simplicity_performance_api_first_guaranteed_slos"><a class="anchor" href="#_3_simplicity_performance_api_first_guaranteed_slos"></a>3. Simplicity &amp; Performance ("API-First, Guaranteed SLOs")</h3>
+<div class="paragraph">
+<p>Developers and data scientists should consume AI via a <strong>stable, OpenAI-compatible API</strong>. They should not care which node runs the model—only that latency and availability meet SLOs.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>The Win:</strong> A single, well-routed API surface. <strong>Disaggregated inference</strong> (where applicable) separates heavy prefill from decode so that "noisy neighbors" do not kill latency.</p>
+</li>
+<li>
+<p><strong>The Benefit:</strong> Predictable Time to First Token (TTFT). Guaranteed SLOs without fighting for dedicated capacity.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_your_mission_industrialize_ai"><a class="anchor" href="#_your_mission_industrialize_ai"></a>Your Mission: Industrialize AI</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In this course, you will move from the "Old Way" (manual, ticket-based, risky) to the "New Way" (MaaS, API-first, governed).</p>
+</div>
+<div class="paragraph">
+<p>You will take on the role of a <strong>Platform Engineer or Architect</strong> and execute the following workflow:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>Strategy:</strong> Compare deployment options—single-model (KServe/TGIS) vs. MaaS (vLLM + llm-d)—and choose the right path for high-concurrency, shared API access.</p>
+</li>
+<li>
+<p><strong>Taxonomy:</strong> Master the terms—MaaS, vLLM, Gateway API, Kuadrant—so you can design and operate the stack.</p>
+</li>
+<li>
+<p><strong>Architecture:</strong> Understand the full stack (hardware, engine, routing, auth) and how scaling and observability work (KEDA, TTFT).</p>
+</li>
+<li>
+<p><strong>Hands-On:</strong> Install and configure OpenShift AI 3.x, enable KServe and the dashboard, deploy an LLMInferenceService with vLLM, and test with an OpenAI-compatible <code>curl</code>.</p>
+</li>
+</ol>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+<div class="title">Prerequisites</div>
+<div class="paragraph">
+<p>To successfully complete the hands-on sections of this course, you need:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Access to an <strong>OpenShift cluster</strong> with Red Hat OpenShift AI 3.x (channel <code>fast-3.x</code> or equivalent).</p>
+</li>
+<li>
+<p>Permissions to install or configure the <strong>OpenShift AI Operator</strong>, <strong>KServe</strong>, and <strong>Dashboard</strong>.</p>
+</li>
+<li>
+<p>The <code>oc</code> CLI and (for testing) <code>curl</code> or a similar HTTP client.</p>
+</li>
+</ul>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<hr>
+<div class="paragraph">
+<p><strong>Ready to choose your path? Continue to the Strategy guide (Well-Lit Paths).</strong></p>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="../index.html">Introduction &amp; Value</a></span>
+  <span class="next"><a href="section1.html">Strategy Guide (Well-Lit Paths)</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

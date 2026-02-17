@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Sharp Edges: Troubleshooting and Day-2 Operations :: Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</title>
+    <link rel="prev" href="section4.html">
+    <link rel="next" href="quiz.html">
+    <meta name="description" content="Common failure modes and fixes for MaaS deployments on OpenShift AI 3.x.">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/REPLACEREPONAME/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="rhoai3-maas" data-version="3.2">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Introduction &amp; Value</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="index.html">Introduction &amp; Value</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="section1.html">Strategy Guide (Well-Lit Paths)</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="section2.html">Taxonomy &amp; Reference</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="section3.html">Architecture Deep Dive</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="section4.html">Hands-On Lab</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="1">
+    <a class="nav-link" href="section5.html">Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="quiz.html">Quiz</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</span>
+    <span class="version">3.2</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">3.2</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</a></li>
+    <li><a href="section5.html">Troubleshooting</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Sharp Edges: Troubleshooting and Day-2 Operations</h1>
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph lead">
+<p><strong>Deployment is easy. Day-2 operations are where the battle is won.</strong></p>
+</div>
+<div class="paragraph">
+<p>Once your LLMInferenceService is deployed, you will encounter issues: pods not starting, routes not resolving, or slow TTFT. This section summarizes the most common "sharp edges" and how to address them.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_1_inference_pod_stuck_in_pending"><a class="anchor" href="#_1_inference_pod_stuck_in_pending"></a>1. Inference Pod Stuck in Pending</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><strong>Symptom:</strong> The inference pod never reaches <strong>Running</strong>; it stays <strong>Pending</strong>.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Cause:</strong> Usually <strong>insufficient GPU</strong> (or no GPU node available). The pod requests <code>nvidia.com/gpu: 1</code> but no node can satisfy it.</p>
+</li>
+<li>
+<p><strong>Check:</strong> <code>oc describe pod &lt;inference-pod&gt; -n &lt;namespace&gt;</code> and look at <strong>Events</strong>. Look for "0/X nodes are available: insufficient nvidia.com/gpu."</p>
+</li>
+<li>
+<p><strong>Fix:</strong> Ensure GPU nodes are present and the NVIDIA GPU Operator (or equivalent) is installed so that <code>nvidia.com/gpu</code> is advertised. Or reduce/remove GPU request for a CPU-only test (if the runtime supports it).</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_2_model_load_or_image_pull_failures"><a class="anchor" href="#_2_model_load_or_image_pull_failures"></a>2. Model Load or Image Pull Failures</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><strong>Symptom:</strong> Pod is <strong>CrashLoopBackOff</strong> or <strong>Error</strong>; logs show model load failure or image pull errors.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Cause:</strong> Model URI unreachable (e.g., Hugging Face timeout, S3 credentials missing) or image pull authentication failure.</p>
+</li>
+<li>
+<p><strong>Check:</strong> <code>oc logs &lt;inference-pod&gt; -n &lt;namespace&gt;</code> and look for "Connection refused," "401 Unauthorized," or "model not found."</p>
+</li>
+<li>
+<p><strong>Fix:</strong> Verify the <code>model.uri</code> (e.g., <code>hf://&#8230;&#8203;</code> or <code>s3://&#8230;&#8203;</code>) is correct and that the pod has network access and any required Data Connection or image pull secret attached.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_3_route_or_gateway_not_reachable"><a class="anchor" href="#_3_route_or_gateway_not_reachable"></a>3. Route or Gateway Not Reachable</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><strong>Symptom:</strong> <code>curl</code> to the inference URL times out or returns 404/503.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Cause:</strong> HTTPRoute or OpenShift Route not created, or Gateway not configured; or DNS/ingress not pointing to the right backend.</p>
+</li>
+<li>
+<p><strong>Check:</strong> <code>oc get route -n &lt;namespace&gt;</code>, <code>oc get httproute -n &lt;namespace&gt;</code>, and <code>oc get gateway -A</code>. Ensure the inference service has a valid <strong>status.url</strong> in KServe.</p>
+</li>
+<li>
+<p><strong>Fix:</strong> Confirm KServe (or the operator) is configured to create Routes/HTTPRoutes. Create or fix the Route/HTTPRoute and Gateway so that the inference service URL is reachable from your client.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_4_slow_or_unstable_ttft"><a class="anchor" href="#_4_slow_or_unstable_ttft"></a>4. Slow or Unstable TTFT</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><strong>Symptom:</strong> Time to first token is high or highly variable.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Cause:</strong> Cold start (first request after scale-up), overloaded GPU, or insufficient replicas.</p>
+</li>
+<li>
+<p><strong>Check:</strong> Use Prometheus/Grafana or OpenShift Observability to inspect <code>vllm_llmd_time_to_first_token_seconds</code> (or the equivalent metric for your runtime).</p>
+</li>
+<li>
+<p><strong>Fix:</strong> Increase replicas or use KEDA to scale on queue depth; consider model caching (e.g., keeping a warm replica); ensure GPU is not oversubscribed.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_5_rate_limiting_or_auth_rejections_kuadrantauthorino"><a class="anchor" href="#_5_rate_limiting_or_auth_rejections_kuadrantauthorino"></a>5. Rate Limiting or Auth Rejections (Kuadrant/Authorino)</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><strong>Symptom:</strong> Requests return 429 (Too Many Requests) or 401/403 (Unauthorized/Forbidden).</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Cause:</strong> Kuadrant rate limits or Authorino (or other auth) rejecting the request.</p>
+</li>
+<li>
+<p><strong>Check:</strong> Review Kuadrant/Authorino policy and logs; confirm the client is sending the expected API key or token.</p>
+</li>
+<li>
+<p><strong>Fix:</strong> Adjust rate limits or auth policy; ensure the client uses the correct credentials and headers.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_quick_reference_commands"><a class="anchor" href="#_quick_reference_commands"></a>Quick Reference Commands</h2>
+<div class="sectionbody">
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 66.6667%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Goal</th>
+<th class="tableblock halign-left valign-top">Command</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">List inference services</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>oc get llminferenceservice -n &lt;namespace&gt;</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Pod status and events</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>oc describe pod -n &lt;namespace&gt; -l serving.kserve.io/inferenceservice=&lt;name&gt;</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Inference pod logs</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>oc logs -n &lt;namespace&gt; -l serving.kserve.io/inferenceservice=&lt;name&gt; -f</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Get service URL</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>oc get inferenceservice &lt;name&gt; -n &lt;namespace&gt; -o jsonpath='{.status.url}'</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Check GPU nodes</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>oc get nodes -l nvidia.com/gpu.present=true</code></p></td>
+</tr>
+</tbody>
+</table>
+<hr>
+<div class="paragraph">
+<p><strong>You have completed the operational playbook. Finish with the Knowledge Check (Quiz).</strong></p>
+</div>
+<div class="paragraph">
+<p><a href="quiz.html" class="xref page">Go to Quiz</a></p>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="section4.html">Hands-On Lab</a></span>
+  <span class="next"><a href="quiz.html">Quiz</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

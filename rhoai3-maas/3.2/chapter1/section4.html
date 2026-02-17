@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Lab: Deploy Your First MaaS Endpoint :: Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</title>
+    <link rel="prev" href="section3.html">
+    <link rel="next" href="section5.html">
+    <meta name="description" content="Install OpenShift AI 3.x, enable KServe and Dashboard, deploy an LLMInferenceService with vLLM, and test with curl.">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/REPLACEREPONAME/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="rhoai3-maas" data-version="3.2">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Introduction &amp; Value</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="index.html">Introduction &amp; Value</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="section1.html">Strategy Guide (Well-Lit Paths)</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="section2.html">Taxonomy &amp; Reference</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="section3.html">Architecture Deep Dive</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="1">
+    <a class="nav-link" href="section4.html">Hands-On Lab</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="section5.html">Troubleshooting</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="quiz.html">Quiz</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</span>
+    <span class="version">3.2</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">3.2</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</a></li>
+    <li><a href="section4.html">Hands-On Lab</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Lab: Deploy Your First MaaS Endpoint</h1>
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph lead">
+<p><strong>Theory is over. It is time to deploy.</strong></p>
+</div>
+<div class="paragraph">
+<p>In this lab, you will stand up a minimal MaaS-style endpoint on Red Hat OpenShift AI 3.x: install the operator, enable the required components, deploy an LLM inference service using vLLM, and verify it with an OpenAI-compatible request.</p>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+<div class="title">Prerequisites</div>
+<div class="ulist">
+<ul>
+<li>
+<p>An <strong>OpenShift cluster</strong> (4.x) with sufficient resources for the OpenShift AI operator and at least one GPU node (or a node that can run the chosen model for testing).</p>
+</li>
+<li>
+<p><strong>Cluster-admin</strong> or equivalent permissions to install operators and create resources in the target namespace.</p>
+</li>
+<li>
+<p>The <strong><code>oc</code></strong> CLI installed and authenticated (<code>oc login</code>).</p>
+</li>
+<li>
+<p><strong>curl</strong> (or similar) for testing the API.</p>
+</li>
+</ul>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_1_install_the_openshift_ai_operator"><a class="anchor" href="#_step_1_install_the_openshift_ai_operator"></a>Step 1: Install the OpenShift AI Operator</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Install the Red Hat OpenShift AI operator from the <strong>fast-3.x</strong> (or equivalent) channel.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>From the OpenShift Console (Administrator view):</strong></p>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Go to <strong>Operators</strong> → <strong>OperatorHub</strong>.</p>
+</li>
+<li>
+<p>Search for <strong>Red Hat OpenShift AI</strong> or <strong>OpenShift AI</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Install</strong>.</p>
+</li>
+<li>
+<p>Choose <strong>Channel:</strong> <code>fast-3.x</code> (or the 3.x channel recommended for your release).</p>
+</li>
+<li>
+<p>Choose <strong>Installation mode:</strong> All namespaces (or a specific namespace if your process requires it).</p>
+</li>
+<li>
+<p>Click <strong>Install</strong> and wait for the operator to be <strong>Installed</strong> and <strong>Succeeded</strong>.</p>
+</li>
+</ol>
+</div>
+</li>
+<li>
+<p><strong>Verify:</strong></p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get csv -A | grep -i openshift.ai
+# or
+oc get csv -A | grep -i red-hat-openShift-ai</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The CSV should show <strong>Succeeded</strong>.</p>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_2_enable_kserve_and_the_dashboard"><a class="anchor" href="#_step_2_enable_kserve_and_the_dashboard"></a>Step 2: Enable KServe and the Dashboard</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>After the operator is installed, enable the components required for inference and the dashboard.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>Create or edit the Data Science Cluster instance (DSCI / default config):</strong></p>
+<div class="paragraph">
+<p>Depending on your OpenShift AI version, you may need to create a <code>DataScienceCluster</code> or similar custom resource and set:
+  * <strong>KServe:</strong> enabled (required for InferenceService / LLMInferenceService).
+  * <strong>Dashboard:</strong> enabled (optional but useful for UI-based configuration and Model Catalog).</p>
+</div>
+</li>
+<li>
+<p><strong>From the OpenShift AI Dashboard (if enabled):</strong></p>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Log in to the <strong>OpenShift AI</strong> dashboard (link provided by the operator or from the OpenShift console).</p>
+</li>
+<li>
+<p>Navigate to <strong>Settings</strong> or <strong>Cluster settings</strong> and confirm <strong>KServe</strong> is enabled and the <strong>Dashboard</strong> is available.</p>
+</li>
+</ol>
+</div>
+</li>
+<li>
+<p><strong>Verify KServe:</strong></p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get pods -n redhat-ods-applications | grep -i kserve
+# or the namespace where KServe is deployed</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Pods related to KServe (e.g., controller, agent) should be <strong>Running</strong>.</p>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_3_deploy_an_llminferenceservice_with_vllm"><a class="anchor" href="#_step_3_deploy_an_llminferenceservice_with_vllm"></a>Step 3: Deploy an LLMInferenceService with vLLM</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Create an <strong>LLMInferenceService</strong> that uses the vLLM runtime. This is the core "model as a service" resource.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>Create a project (if needed):</strong></p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc new-project my-maas-lab</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p><strong>Create the LLMInferenceService:</strong></p>
+<div class="paragraph">
+<p>Save the following as <code>llm-inference-service.yaml</code> (adjust namespace, model URI, and hardware profile to match your environment):</p>
+</div>
+</li>
+</ol>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: serving.kserve.io/v1alpha1
+kind: LLMInferenceService
+metadata:
+  name: maas-demo
+  namespace: my-maas-lab
+  annotations:
+    opendatahub.io/model-type: generative
+spec:
+  replicas: 1
+  model:
+    uri: "hf://Qwen/Qwen3-0.6B"
+    name: "Qwen3-0.6B"
+  template:
+    spec:
+      containers:
+        - name: kserve-container
+          resources:
+            limits:
+              nvidia.com/gpu: "1"
+            requests:
+              nvidia.com/gpu: "1"
+          env:
+            - name: VLLM_ADDITIONAL_ARGS
+              value: "--max-model-len=4096"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>+
+Apply it:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f llm-inference-service.yaml</code></pre>
+</div>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>Wait for the service to be ready:</strong></p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get llminferenceservice -n my-maas-lab -w
+# Wait until READY is True</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The first time, the image and model may take several minutes to pull and load.</p>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_4_get_the_inference_url_and_test_with_curl"><a class="anchor" href="#_step_4_get_the_inference_url_and_test_with_curl"></a>Step 4: Get the Inference URL and Test with curl</h2>
+<div class="sectionbody">
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>Obtain the inference URL:</strong></p>
+<div class="paragraph">
+<p>Depending on your setup, the URL may come from:
+  * The <strong>OpenShift AI Dashboard</strong> (Model Serving → your service → endpoint).
+  * Or an <strong>HTTPRoute</strong> / <strong>Route</strong> created by KServe:</p>
+</div>
+</li>
+</ol>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get route -n my-maas-lab
+# or
+oc get httproute -n my-maas-lab
+oc get inferenceservice maas-demo -n my-maas-lab -o jsonpath='{.status.url}'</code></pre>
+</div>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>Send an OpenAI-compatible request:</strong></p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">export INFERENCE_URL="&lt;your-inference-url&gt;"   # e.g. https://maas-demo-my-maas-lab.apps.cluster.example.com
+
+curl -k -X POST "$INFERENCE_URL/v1/chat/completions" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "Qwen3-0.6B",
+    "messages": [
+      {"role": "user", "content": "Say hello in one sentence."}
+    ],
+    "max_tokens": 50
+  }'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Success:</strong> You should receive a JSON response with <code>choices[].message.content</code> containing the model&#8217;s reply.</p>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_5_verify_end_to_end"><a class="anchor" href="#_step_5_verify_end_to_end"></a>Step 5: Verify End-to-End</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Dashboard:</strong> In the OpenShift AI Dashboard, open <strong>Model Serving</strong> (or equivalent) and confirm <code>maas-demo</code> is <strong>Started</strong> or <strong>Ready</strong>.</p>
+</li>
+<li>
+<p><strong>Pods:</strong> <code>oc get pods -n my-maas-lab</code> should show the inference pod <strong>Running</strong>.</p>
+</li>
+<li>
+<p><strong>Logs:</strong> If something fails, check <code>oc logs -n my-maas-lab -l serving.kserve.io/inferenceservice=maas-demo</code>.</p>
+</li>
+</ul>
+</div>
+<hr>
+<div class="paragraph">
+<p><strong>You have deployed your first MaaS-style endpoint. Next: review Sharp Edges (Troubleshooting) and take the Knowledge Check.</strong></p>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="section3.html">Architecture Deep Dive</a></span>
+  <span class="next"><a href="section5.html">Troubleshooting</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>
