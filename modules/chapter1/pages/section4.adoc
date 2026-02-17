@@ -1,0 +1,173 @@
+= Lab: Deploy Your First MaaS Endpoint
+:navtitle: Hands-On Lab
+:toc: macro
+:role: Hands-On Lab
+:audience: Developers & Platform Engineers
+:description: Install OpenShift AI 3.x, enable KServe and Dashboard, deploy an LLMInferenceService with vLLM, and test with curl.
+
+[.lead]
+*Theory is over. It is time to deploy.*
+
+In this lab, you will stand up a minimal MaaS-style endpoint on Red Hat OpenShift AI 3.x: install the operator, enable the required components, deploy an LLM inference service using vLLM, and verify it with an OpenAI-compatible request.
+
+[IMPORTANT]
+.Prerequisites
+====
+* An **OpenShift cluster** (4.x) with sufficient resources for the OpenShift AI operator and at least one GPU node (or a node that can run the chosen model for testing).
+* **Cluster-admin** or equivalent permissions to install operators and create resources in the target namespace.
+* The **`oc`** CLI installed and authenticated (`oc login`).
+* **curl** (or similar) for testing the API.
+====
+
+== Step 1: Install the OpenShift AI Operator
+
+Install the Red Hat OpenShift AI operator from the **fast-3.x** (or equivalent) channel.
+
+. **From the OpenShift Console (Administrator view):**
++
+1. Go to **Operators** → **OperatorHub**.
+2. Search for **Red Hat OpenShift AI** or **OpenShift AI**.
+3. Click **Install**.
+4. Choose **Channel:** `fast-3.x` (or the 3.x channel recommended for your release).
+5. Choose **Installation mode:** All namespaces (or a specific namespace if your process requires it).
+6. Click **Install** and wait for the operator to be **Installed** and **Succeeded**.
+
+. **Verify:**
++
+[source,bash]
+----
+oc get csv -A | grep -i openshift.ai
+# or
+oc get csv -A | grep -i red-hat-openShift-ai
+----
++
+The CSV should show **Succeeded**.
+
+== Step 2: Enable KServe and the Dashboard
+
+After the operator is installed, enable the components required for inference and the dashboard.
+
+. **Create or edit the Data Science Cluster instance (DSCI / default config):**
++
+Depending on your OpenShift AI version, you may need to create a `DataScienceCluster` or similar custom resource and set:
+  * **KServe:** enabled (required for InferenceService / LLMInferenceService).
+  * **Dashboard:** enabled (optional but useful for UI-based configuration and Model Catalog).
+
+. **From the OpenShift AI Dashboard (if enabled):**
++
+1. Log in to the **OpenShift AI** dashboard (link provided by the operator or from the OpenShift console).
+2. Navigate to **Settings** or **Cluster settings** and confirm **KServe** is enabled and the **Dashboard** is available.
+
+. **Verify KServe:**
++
+[source,bash]
+----
+oc get pods -n redhat-ods-applications | grep -i kserve
+# or the namespace where KServe is deployed
+----
++
+Pods related to KServe (e.g., controller, agent) should be **Running**.
+
+== Step 3: Deploy an LLMInferenceService with vLLM
+
+Create an **LLMInferenceService** that uses the vLLM runtime. This is the core "model as a service" resource.
+
+. **Create a project (if needed):**
++
+[source,bash]
+----
+oc new-project my-maas-lab
+----
+
+. **Create the LLMInferenceService:**
++
+Save the following as `llm-inference-service.yaml` (adjust namespace, model URI, and hardware profile to match your environment):
+
+[source,yaml]
+----
+apiVersion: serving.kserve.io/v1alpha1
+kind: LLMInferenceService
+metadata:
+  name: maas-demo
+  namespace: my-maas-lab
+  annotations:
+    opendatahub.io/model-type: generative
+spec:
+  replicas: 1
+  model:
+    uri: "hf://Qwen/Qwen3-0.6B"
+    name: "Qwen3-0.6B"
+  template:
+    spec:
+      containers:
+        - name: kserve-container
+          resources:
+            limits:
+              nvidia.com/gpu: "1"
+            requests:
+              nvidia.com/gpu: "1"
+          env:
+            - name: VLLM_ADDITIONAL_ARGS
+              value: "--max-model-len=4096"
+----
++
+Apply it:
+
+[source,bash]
+----
+oc apply -f llm-inference-service.yaml
+----
+
+. **Wait for the service to be ready:**
++
+[source,bash]
+----
+oc get llminferenceservice -n my-maas-lab -w
+# Wait until READY is True
+----
++
+The first time, the image and model may take several minutes to pull and load.
+
+== Step 4: Get the Inference URL and Test with curl
+
+. **Obtain the inference URL:**
++
+Depending on your setup, the URL may come from:
+  * The **OpenShift AI Dashboard** (Model Serving → your service → endpoint).
+  * Or an **HTTPRoute** / **Route** created by KServe:
+
+[source,bash]
+----
+oc get route -n my-maas-lab
+# or
+oc get httproute -n my-maas-lab
+oc get inferenceservice maas-demo -n my-maas-lab -o jsonpath='{.status.url}'
+----
+
+. **Send an OpenAI-compatible request:**
++
+[source,bash]
+----
+export INFERENCE_URL="<your-inference-url>"   # e.g. https://maas-demo-my-maas-lab.apps.cluster.example.com
+
+curl -k -X POST "$INFERENCE_URL/v1/chat/completions" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "Qwen3-0.6B",
+    "messages": [
+      {"role": "user", "content": "Say hello in one sentence."}
+    ],
+    "max_tokens": 50
+  }'
+----
++
+*Success:* You should receive a JSON response with `choices[].message.content` containing the model's reply.
+
+== Step 5: Verify End-to-End
+
+* **Dashboard:** In the OpenShift AI Dashboard, open **Model Serving** (or equivalent) and confirm `maas-demo` is **Started** or **Ready**.
+* **Pods:** `oc get pods -n my-maas-lab` should show the inference pod **Running**.
+* **Logs:** If something fails, check `oc logs -n my-maas-lab -l serving.kserve.io/inferenceservice=maas-demo`.
+
+---
+*You have deployed your first MaaS-style endpoint. Next: review Sharp Edges (Troubleshooting) and take the Knowledge Check.*

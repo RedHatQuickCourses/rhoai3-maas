@@ -1,6 +1,88 @@
-= Section 3
+= The MaaS Stack: Architecture Deep Dive
+:navtitle: Architecture Deep Dive
+:toc: macro
+:role: Technical Deep Dive
+:audience: Platform Engineers & Architects
+:description: The full MaaS stack—hardware, vLLM, Gateway API, auth—plus scaling (KEDA) and observability (TTFT).
 
-* Create multiple copies of this section as needed.
-* Remove any unnecessary sections or chapter pages.
-* Customize the section as appropriate.
-* Ensure that each page contains a manageable amount of content.
+[.lead]
+*From GPU to API: understanding the machinery under the hood.*
+
+To run MaaS at scale, you need a clear mental model of the stack. This section walks through the layers: hardware, inference engine, routing, and auth—and how scaling and observability fit in.
+
+== The Stack (Bottom to Top)
+
+=== 1. Hardware Layer (GPUs, MIG)
+
+At the foundation are the physical accelerators. For production MaaS:
+
+* **GPU types:** NVIDIA A100, H100, or similar data-center GPUs are typical. Consumer-grade GPUs are not supported for production serving.
+* **MIG (Multi-Instance GPU):** Where supported (e.g., A100), MIG allows you to partition a single GPU into isolated instances. This supports **GPU slicing**—multiple smaller workloads sharing one physical card with guaranteed isolation.
+
+=== 2. Inference Engine (vLLM)
+
+vLLM runs in pods that request GPU resources. It:
+
+* Loads model weights (from OCI images, S3, or other configured sources).
+* Serves OpenAI-compatible endpoints (e.g., `/v1/chat/completions`).
+* Uses PagedAttention and continuous batching for high throughput.
+
+In the **MaaS/distributed** path, **llm-d** sits above vLLM to schedule and route requests (e.g., cache-aware routing, prefill/decode disaggregation).
+
+=== 3. Routing Layer (Gateway API)
+
+The **Gateway API** is the "front door" for inference traffic. It:
+
+* Receives HTTP/HTTPS requests from clients.
+* Routes them to the correct backend (vLLM service) based on host, path, or other rules.
+* Replaces or complements legacy OpenShift Routes with a more flexible, policy-aware model.
+
+Traffic flows: **Client → Gateway API → (policy/Kuadrant) → vLLM (or llm-d proxy) → vLLM pod.**
+
+=== 4. Auth & Governance (Authorino, Kuadrant)
+
+Before (or at) the Gateway, **Kuadrant** and optionally **Authorino** enforce:
+
+* **Rate limiting:** So one consumer cannot starve others.
+* **Authentication:** API keys, OIDC, or other mechanisms.
+* **Authorization:** Who can call which model or endpoint.
+
+This gives you **Zero Trust** and guaranteed SLOs without "noisy neighbors" overwhelming the system.
+
+== Scaling: Beyond CPU (KEDA)
+
+MaaS scaling should be **event-driven**, not only CPU-based.
+
+* **KEDA** (Kubernetes Event-Driven Autoscaling) can scale inference workloads based on:
+  * Queue depth (e.g., number of requests waiting).
+  * Token count or other custom metrics exposed by vLLM/llm-d.
+* **Why it matters:** Scaling on CPU alone often lags real demand. Scaling on queue depth or token throughput keeps latency stable under bursty traffic.
+
+== Observability: Time to First Token (TTFT)
+
+The most user-visible metric for inference is **Time to First Token (TTFT)**.
+
+* **What it is:** Latency from the moment the request is sent until the first token of the response is streamed.
+* **Why it matters:** Users perceive responsiveness by TTFT. Guaranteeing SLOs means tracking TTFT (e.g., p95, p99) and alerting when it degrades.
+* **Where to get it:** Prometheus metrics from vLLM/llm-d (e.g., `vllm_llmd_time_to_first_token_seconds`) and dashboards (Grafana, OpenShift Observability).
+
+== Summary Diagram (Conceptual)
+
+[literal]
+  Clients
+     |
+     v
+  Gateway API  <-- Kuadrant (rate limit, policy)
+     |
+     v
+  llm-d (scheduler) [when using MaaS/distributed path]
+     |
+     v
+  vLLM pods (inference engine)
+     |
+     v
+  GPUs (MIG / time-slicing where applicable)
+[/literal]
+
+---
+*Now that you understand the architecture, proceed to the Lab to install, configure, and deploy.*

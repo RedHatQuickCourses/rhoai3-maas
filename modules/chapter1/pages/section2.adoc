@@ -1,6 +1,75 @@
-= Section 2
+= MaaS Taxonomy: Terms and Definitions
+:navtitle: Taxonomy & Reference
+:toc: macro
+:role: Reference Guide
+:audience: Platform Engineers & Architects
+:description: Glossary of MaaS-related terms—vLLM, Gateway API, Kuadrant, and related concepts.
 
-* Create multiple copies of this section as needed.
-* Remove any unnecessary sections or chapter pages.
-* Customize the section as appropriate.
-* Ensure that each page contains a manageable amount of content.
+[.lead]
+*To operate the stack, you must speak its language.*
+
+Use this page as a quick reference for the key terms in the Models-as-a-Service architecture on Red Hat OpenShift AI 3.x.
+
+== Core Terms
+
+=== MaaS (Models as a Service)
+
+A **centralized AI inference utility** where multiple models and consumers are served through a single, governed API. Resources (e.g., GPUs) can be shared dynamically; access and rate are controlled by policy. Contrast with "one deployment per model per team" or public APIs.
+
+=== vLLM
+
+The **inference engine** used in the MaaS stack. vLLM is a high-performance, open-source server for LLMs that supports continuous batching, PagedAttention, and OpenAI-compatible APIs. In OpenShift AI 3.x, vLLM is the default engine for LLM inference when using the MaaS/distributed path.
+
+=== Gateway API
+
+The **routing layer** that replaces or complements legacy OpenShift Routes. Gateway API provides a standard way to define HTTP routes, backends, and traffic splitting. In the MaaS context, it is the "front door" through which inference requests are routed to the appropriate vLLM (or other) backends.
+
+=== Kuadrant
+
+The **policy and governance engine** for APIs. Kuadrant provides rate limiting, authentication, and other policies that apply to traffic entering via the Gateway API. It enables Zero Trust and guaranteed SLOs by controlling who can call what and at what rate.
+
+=== Authorino (when referenced)
+
+An **auth layer** that can integrate with the Gateway to enforce authentication and authorization (e.g., API keys, OIDC) before requests reach the inference backend. Often used alongside Kuadrant for full governance.
+
+=== llm-d (Distributed Inference)
+
+When using the **MaaS/distributed** path, **llm-d** is the component that orchestrates inference across multiple vLLM instances. It handles scheduling, cache-aware routing (e.g., KV cache affinity), and disaggregation (prefill vs. decode) so that high concurrency and SLOs can be met.
+
+=== KEDA (Kubernetes Event-Driven Autoscaling)
+
+Used in the MaaS stack to **scale inference workloads** based on queue depth, token count, or other metrics—not just CPU. This allows the platform to scale up when demand spikes and scale down when idle, improving ROI.
+
+=== TTFT (Time to First Token)
+
+A key **observability metric** for inference. TTFT measures the latency from request submission to the first token of the response. Low, stable TTFT is critical for user experience and SLOs.
+
+== Quick Reference
+
+|===
+| **Term** | **Role in MaaS**
+
+| MaaS
+| Centralized AI utility; API-first, governed
+
+| vLLM
+| Inference engine (serves the model)
+
+| Gateway API
+| Routing layer (replaces/supplements Routes)
+
+| Kuadrant
+| Policy, rate limiting, governance
+
+| llm-d
+| Distributed inference orchestration (scheduling, routing)
+
+| KEDA
+| Event-driven autoscaling (queue, tokens)
+
+| TTFT
+| Observability: time to first token
+|===
+
+---
+*Next: See how these pieces fit together in the Architecture Deep Dive.*

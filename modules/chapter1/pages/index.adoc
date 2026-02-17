@@ -1,7 +1,82 @@
-= Chapter 1
+= Models as a Service: From Ticket-Based Blockers to API-First Utility
+:navtitle: Introduction & Value
+:toc: macro
+:role: Product Concept
+:audience: Executives, Architects & Platform Engineers
+:description: The business case for MaaS—efficiency, security, and control on Red Hat OpenShift AI 3.x.
 
-In this section, we cover... FIXME
+[.lead]
+*The "Old Way" is manual, slow, and risky. The "New Way" is industrialized.*
 
+In a mature platform, developers do not file tickets to get a database. They call an API. They get a connection string. They build.
 
-- Add or remove section entries in the `antora.yaml` file as needed.
-- Ensure you create or delete the corresponding directory for the chapter accordingly.
+Yet in many AI organizations, data scientists still wait on IT for GPU access. Expensive accelerators sit idle while requests queue. "Shadow AI" creeps in when teams bypass governance to get work done—creating security and compliance risk.
+
+This is the **ticket-based** trap. It blocks velocity, burns budget, and forces trade-offs between control and speed.
+
+[NOTE]
+.The Core Sales Objection
+====
+*"Why can't we just use public APIs (OpenAI, etc.) and avoid building our own inference platform?"*
+
+**Cost:** Public APIs scale with usage in a way that can explode at enterprise volume. **Security:** Traffic and data leave your perimeter. **Control:** You cannot guarantee SLOs when you share infrastructure with "noisy neighbors." MaaS gives you a centralized, private, API-first utility—so you pay for capacity you own and govern.
+====
+
+== The Solution: Models as a Service (MaaS)
+
+**Models as a Service (MaaS)** on Red Hat OpenShift AI 3.x turns inference into an **industrialized utility**. Instead of one-off deployments and ticket-based access, you provide a centralized platform where:
+
+* **vLLM** serves as the high-performance inference engine.
+* **Gateway API** (replacing legacy Routes) handles routing and traffic shaping.
+* **Kuadrant** (and related policy layers) enforces governance, rate limiting, and Zero Trust.
+
+Resources are shared dynamically. Endpoints are secured by policy. Data scientists and applications consume AI through a **single, governed API**—no tickets, no shadow deployments.
+
+== Three Pillars of Value
+
+By adopting MaaS, you unlock three capabilities that ad-hoc or public-API approaches cannot match:
+
+=== 1. Efficiency ("GPU Slicing & Dynamic Sharing")
+
+Idle GPUs are the hidden tax of AI infrastructure. Single-tenant, ticket-allocated models leave capacity unused during off-peak hours.
+
+* **The Win:** MaaS enables **dynamic resource sharing** and, where supported, **GPU slicing** (e.g., time-slicing, MIG) so multiple workloads or tenants share the same hardware.
+* **The Benefit:** Lower TCO. You maximize utilization instead of over-provisioning for peak.
+
+=== 2. Security & Governance ("Zero Trust, Private Network")
+
+When inference runs on someone else's cloud, your prompts and data leave your control. When every team deploys their own "quick" endpoint, you lose visibility and policy enforcement.
+
+* **The Win:** Traffic stays on your **private network**. Kuadrant and Gateway API let you apply rate limits, auth, and governance at the edge.
+* **The Benefit:** Zero Trust posture. Guaranteed compliance. No shadow AI.
+
+=== 3. Simplicity & Performance ("API-First, Guaranteed SLOs")
+
+Developers and data scientists should consume AI via a **stable, OpenAI-compatible API**. They should not care which node runs the model—only that latency and availability meet SLOs.
+
+* **The Win:** A single, well-routed API surface. **Disaggregated inference** (where applicable) separates heavy prefill from decode so that "noisy neighbors" do not kill latency.
+* **The Benefit:** Predictable Time to First Token (TTFT). Guaranteed SLOs without fighting for dedicated capacity.
+
+== Your Mission: Industrialize AI
+
+In this course, you will move from the "Old Way" (manual, ticket-based, risky) to the "New Way" (MaaS, API-first, governed).
+
+You will take on the role of a **Platform Engineer or Architect** and execute the following workflow:
+
+1. **Strategy:** Compare deployment options—single-model (KServe/TGIS) vs. MaaS (vLLM + llm-d)—and choose the right path for high-concurrency, shared API access.
+2. **Taxonomy:** Master the terms—MaaS, vLLM, Gateway API, Kuadrant—so you can design and operate the stack.
+3. **Architecture:** Understand the full stack (hardware, engine, routing, auth) and how scaling and observability work (KEDA, TTFT).
+4. **Hands-On:** Install and configure OpenShift AI 3.x, enable KServe and the dashboard, deploy an LLMInferenceService with vLLM, and test with an OpenAI-compatible `curl`.
+
+[IMPORTANT]
+.Prerequisites
+====
+To successfully complete the hands-on sections of this course, you need:
+
+* Access to an **OpenShift cluster** with Red Hat OpenShift AI 3.x (channel `fast-3.x` or equivalent).
+* Permissions to install or configure the **OpenShift AI Operator**, **KServe**, and **Dashboard**.
+* The `oc` CLI and (for testing) `curl` or a similar HTTP client.
+====
+
+---
+*Ready to choose your path? Continue to the Strategy guide (Well-Lit Paths).*

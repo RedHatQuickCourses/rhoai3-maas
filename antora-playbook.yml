@@ -1,6 +1,6 @@
 site:
-  title: FIXME Course Title
-  start_page: REPLACEREPONAME::index.adoc
+  title: Models as a Service (MaaS) on Red Hat OpenShift AI 3.x
+  start_page: rhoai3-maas::index.adoc
 
 content:
   sources:
