@@ -3,10 +3,10 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>The MaaS Stack: Architecture Deep Dive :: Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</title>
+    <title>The MaaS Stack: Architecture Deep Dive (OpenShift AI 3.3) :: Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</title>
     <link rel="prev" href="section1.html">
     <link rel="next" href="section3.html">
-    <meta name="description" content="A technical breakdown of the OpenShift AI 3.x MaaS stack, including vLLM, Gateway API, KEDA, and TrustyAI.">
+    <meta name="description" content="A technical breakdown of the OpenShift AI 3.3 distributed MaaS stack, including llm-d, RoCE networking, Gateway API, and Kuadrant governance.">
     <meta name="generator" content="Antora 3.1.3">
     <link rel="stylesheet" href="../../../_/css/site.css">
     <script>var uiRootPath = '../../../_'</script>
@@ -102,81 +102,35 @@
   <div class="toc-menu"></div>
 </aside>
 <article class="doc">
-<h1 class="page">The MaaS Stack: Architecture Deep Dive</h1>
+<h1 class="page">The MaaS Stack: Architecture Deep Dive (OpenShift AI 3.3)</h1>
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph lead">
-<p>You have chosen the MaaS utility path. Now, let&#8217;s look at the blueprint.</p>
+<p>You have chosen the Distributed MaaS path. Now, let&#8217;s look at the blueprint.</p>
 </div>
 <div class="paragraph">
-<p>To run AI as an industrialized service, you need more than just a container. You need a stack that handles <strong>inference</strong>, <strong>routing</strong>, <strong>governance</strong>, and <strong>observability</strong>.</p>
+<p>In OpenShift AI 3.3, a MaaS deployment is not a single container. It is a highly orchestrated, multi-layered distributed system. While the Gen AI Studio UI makes it look simple, a true GitOps architect must understand how the traffic flows, how the hardware is sliced, and how governance is enforced mathematically at the edge.</p>
 </div>
 <div class="paragraph">
-<p>This section breaks down the "MaaS Stack" layer by layer, showing how Red Hat OpenShift AI 3.x orchestrates these components to deliver a secure, scalable API.</p>
-</div>
-<div class="imageblock unresolved">
-<div class="content">
-<img src="maas-architecture-stack.png" alt="Diagram showing the 4 layers: Hardware &#8594; Inference (vLLM) &#8594; Networking (Gateway) &#8594; Governance (Kuadrant/TrustyAI)">
-</div>
+<p>This section breaks down the 3.3 "MaaS Stack" layer by layer.</p>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_layer_1_the_inference_engine_vllm"><a class="anchor" href="#_layer_1_the_inference_engine_vllm"></a>Layer 1: The Inference Engine (vLLM)</h2>
+<h2 id="_layer_1_hardware_efficiency_networking_the_base"><a class="anchor" href="#_layer_1_hardware_efficiency_networking_the_base"></a>Layer 1: Hardware Efficiency &amp; Networking (The Base)</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>At the heart of the stack is <strong>vLLM</strong>, the high-performance serving runtime.</p>
+<p>Before software touches a prompt, the infrastructure must be optimized. 3.3 introduces two major architectural patterns for hardware efficiency:</p>
 </div>
 <div class="ulist">
 <ul>
 <li>
-<p><strong>Role:</strong> It loads the model weights and executes the neural network forward pass.</p>
+<p><strong>GPU Time-Slicing (For Scale-Out):</strong> If you are running multiple smaller models (e.g., Granite-7B), dedicating a whole GPU to each is wasteful. By applying a specific <code>ClusterPolicy</code> and labeling the MachineSets, time-slicing allows multiple <code>llm-d</code> deployments to interleave their processing on a single physical NVIDIA GPU.</p>
 </li>
 <li>
-<p><strong>Key Feature:</strong> <strong>PagedAttention</strong>. Unlike legacy runtimes that fragment memory, vLLM manages GPU memory like an operating system manages RAM (using pages). This allows for higher batch sizes and throughput.</p>
-</li>
-<li>
-<p><strong>Deployment:</strong> vLLM runs as a standard Pod, but in a MaaS configuration, it is often deployed via the <strong>Service Mesh</strong> or <strong>Serverless</strong> components to support scale-to-zero.</p>
+<p><strong>RoCE / GPUDirect RDMA (For Scale-Up):</strong> If you are running massive models (e.g., Llama-3-70B) that require multiple GPUs spanning multiple physical worker nodes, standard TCP/IP networking creates a massive bottleneck. <strong>RDMA over Converged Ethernet (RoCE)</strong> allows a GPU on Node A to write directly to the memory of a GPU on Node B, bypassing the host CPU and achieving sub-microsecond latency.</p>
 </li>
 </ul>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_layer_2_role_oriented_networking_gateway_api"><a class="anchor" href="#_layer_2_role_oriented_networking_gateway_api"></a>Layer 2: Role-Oriented Networking (Gateway API)</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>In RHOAI 3.x, we move away from simple OpenShift Routes to the <strong>Kubernetes Gateway API</strong>. This splits the responsibility of "exposing the service" into two distinct roles:</p>
-</div>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p><strong>The Infrastructure Architect</strong> manages the <strong>Gateway</strong>.</p>
-<div class="ulist">
-<ul>
-<li>
-<p>They define the "Front Door" (IP address, TLS certificates, load balancer hardware).</p>
-</li>
-<li>
-<p><strong>Manifest:</strong> <code>Gateway</code></p>
-</li>
-</ul>
-</div>
-</li>
-<li>
-<p><strong>The ML Engineer</strong> manages the <strong>HTTPRoute</strong>.</p>
-<div class="ulist">
-<ul>
-<li>
-<p>They simply "attach" their model to the Gateway.</p>
-</li>
-<li>
-<p><strong>Manifest:</strong> <code>HTTPRoute</code> (e.g., "Route traffic from <code>api.corp.com/v1/models/llama-3</code> to my vLLM service").</p>
-</li>
-</ul>
-</div>
-</li>
-</ol>
 </div>
 <div class="admonitionblock note">
 <table>
@@ -185,9 +139,9 @@
 <i class="fa icon-note" title="Note"></i>
 </td>
 <td class="content">
-<div class="title">Why this matters</div>
+<div class="title">Technology Preview Note</div>
 <div class="paragraph">
-<p>This separation means developers can deploy new models without needing cluster-admin privileges to configure ingress controllers. It is the technical enabler of "Self-Service."</p>
+<p>RoCE and GPU Time-slicing configurations for MaaS are currently Technology Preview features in 3.3.</p>
 </div>
 </td>
 </tr>
@@ -196,105 +150,101 @@
 </div>
 </div>
 <div class="sect1">
-<h2 id="_layer_3_the_governance_plane_kuadrant"><a class="anchor" href="#_layer_3_the_governance_plane_kuadrant"></a>Layer 3: The Governance Plane (Kuadrant)</h2>
+<h2 id="_layer_2_disaggregated_inference_llm_d_vllm"><a class="anchor" href="#_layer_2_disaggregated_inference_llm_d_vllm"></a>Layer 2: Disaggregated Inference (<code>llm-d</code> &amp; <code>vLLM</code>)</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>An industrialized factory needs a foreman to ensure safety and efficiency. <strong>Kuadrant</strong> is that foreman.</p>
+<p>This is the most significant architectural change in 3.3. You no longer route traffic directly to a <code>vLLM</code> pod. Instead, the inference workload is split into two distinct roles:</p>
 </div>
-<div class="paragraph">
-<p>It connects to the Gateway API to enforce policies <strong>before</strong> traffic hits the expensive GPUs.</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p><strong>Rate Limiting:</strong> Protects the system from being overwhelmed by a single user.</p>
-</li>
-<li>
-<p><strong>Token-Awareness:</strong> This is critical for LLMs. A request with 10 tokens costs less than a request with 10,000 tokens. Kuadrant can rate-limit based on the <strong>aggregate token count</strong>, ensuring true cost control.</p>
-</li>
-<li>
-<p><strong>AuthN/AuthZ:</strong> Integrates with <strong>Authorino</strong> to enforce OIDC authentication (Keycloak, Entra ID) at the edge.</p>
-</li>
-</ul>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_layer_4_observability_trust_trustyai"><a class="anchor" href="#_layer_4_observability_trust_trustyai"></a>Layer 4: Observability &amp; Trust (TrustyAI)</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>The final layer ensures the factory is producing quality goods. <strong>TrustyAI</strong> monitors the model&#8217;s behavior in real-time.</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p><strong>Bias Detection:</strong> Is the model showing statistical bias against protected groups in its output?</p>
-</li>
-<li>
-<p><strong>Drift Detection:</strong> Is the incoming data significantly different from the training data? (e.g., users asking about 2024 events when the model was trained on 2022 data).</p>
-</li>
-<li>
-<p><strong>Explainability:</strong> Providing insights into <strong>why</strong> a model gave a specific response.</p>
-</li>
-</ul>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_scaling_logic_keda"><a class="anchor" href="#_scaling_logic_keda"></a>Scaling Logic: KEDA</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>How do we handle a burst of traffic? We don&#8217;t just look at CPU usage.</p>
-</div>
-<div class="paragraph">
-<p><strong>KEDA (Kubernetes Event-Driven Autoscaling)</strong> scales the vLLM pods based on "application intelligence."</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p><strong>The Old Way (HPA):</strong> Scale when CPU &gt; 80%. (Too slow for AI; the queue is already full).</p>
-</li>
-<li>
-<p><strong>The MaaS Way (KEDA):</strong> Scale when <code>serving_queue_depth &gt; 5</code>.</p>
-</li>
-<li>
-<p><strong>Result:</strong> The system spins up new pods <strong>before</strong> latency degrades, ensuring a consistent <strong>Time-To-First-Token (TTFT)</strong>.</p>
-</li>
-</ul>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_summary_the_request_lifecycle"><a class="anchor" href="#_summary_the_request_lifecycle"></a>Summary: The Request Lifecycle</h2>
-<div class="sectionbody">
 <div class="olist arabic">
 <ol class="arabic">
 <li>
-<p><strong>User</strong> sends a curl request to <code>api.corp.com</code>.</p>
+<p><strong>The Orchestrator (<code>llm-d</code>):</strong> The Distributed Inference Server is the "brain." It receives all incoming requests from the Gateway. It understands the state of the KV Cache across all worker nodes. It performs <strong>cache-aware routing</strong>, ensuring that if User A asks a follow-up question, the request is routed to the specific worker node that already holds User A&#8217;s context in its GPU memory.</p>
 </li>
 <li>
-<p><strong>Gateway</strong> receives the traffic.</p>
-</li>
-<li>
-<p><strong>Kuadrant</strong> checks: "Does this user have quota remaining?" (If no &#8594; 429 Error).</p>
-</li>
-<li>
-<p><strong>KEDA</strong> checks: "Is the queue too deep?" (If yes &#8594; Spin up more pods).</p>
-</li>
-<li>
-<p><strong>vLLM</strong> processes the request using PagedAttention.</p>
-</li>
-<li>
-<p><strong>TrustyAI</strong> asynchronously logs the input/output for bias analysis.</p>
-</li>
-<li>
-<p><strong>Response</strong> is streamed back to the user.</p>
+<p><strong>The Workers (<code>vLLM</code>):</strong> These are the "muscles." Deployed as stateful backend workers, they simply crunch the matrices and generate tokens as commanded by <code>llm-d</code>.</p>
 </li>
 </ol>
 </div>
-<div class="paragraph text-center">
-<p><strong>You have the blueprints. Now, let&#8217;s build the factory.</strong><br>
-<a href="lab-setup.html"><strong>Next: Hands-On Lab - Deploying Your First MaaS Endpoint &gt;</strong></a></p>
+<div class="paragraph">
+<p>By disaggregating these roles, the system can independently scale the prefill (processing the prompt) and the decode (generating the answer) phases, completely eliminating the "noisy neighbor" latency spikes that plague older architectures.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_layer_3_role_oriented_networking_gateway_api"><a class="anchor" href="#_layer_3_role_oriented_networking_gateway_api"></a>Layer 3: Role-Oriented Networking (Gateway API)</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>To expose the <code>llm-d</code> engine, RHOAI 3.3 relies entirely on the <strong>Kubernetes Gateway API</strong>. This physically separates the networking responsibility:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>The Cluster Admin</strong> deploys the <code>Gateway</code> (the physical load balancer, IP address, and TLS termination).</p>
+</li>
+<li>
+<p><strong>The GitOps Pipeline</strong> deploys an <code>HTTPRoute</code> that attaches the <code>llm-d</code> service to that Gateway. Developers never need cluster-admin rights to expose a new model.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_layer_4_the_governance_plane_kuadrant"><a class="anchor" href="#_layer_4_the_governance_plane_kuadrant"></a>Layer 4: The Governance Plane (Kuadrant)</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>When an OpenShift AI Administrator uses the new 3.3 UI to create a "Premium Tier" with a limit of 10,000 tokens per minute, what actually happens?</p>
+</div>
+<div class="paragraph">
+<p>The OpenShift AI Operator translates that UI action into declarative <strong>Kuadrant</strong> Custom Resources:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Authorino:</strong> Enforces Authentication. It validates the MaaS API token generated by the user in the Gen AI Studio. If the token is invalid or missing, Authorino drops the connection (<code>401 Unauthorized</code>).</p>
+</li>
+<li>
+<p><strong>Limitador:</strong> Enforces Quotas. It inspects the <code>x-ratelimit</code> headers. Crucially, it counts <strong>aggregate tokens</strong>, not just HTTP hits.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>By enforcing this at the network edge via Envoy WASM plugins, bad requests are dropped before they ever consume a single cycle of expensive GPU time.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_summary_the_3_3_request_lifecycle"><a class="anchor" href="#_summary_the_3_3_request_lifecycle"></a>Summary: The 3.3 Request Lifecycle</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>To troubleshoot or engineer this system, you must understand the exact flow of a request:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>Client</strong> sends an OpenAI-compatible POST request (<code>/v1/chat/completions</code>) using their MaaS API Token.</p>
+</li>
+<li>
+<p><strong>Gateway API</strong> receives the request at the edge of the OpenShift cluster.</p>
+</li>
+<li>
+<p><strong>Kuadrant (Authorino)</strong> validates the API token against the defined Service Tiers.</p>
+</li>
+<li>
+<p><strong>Kuadrant (Limitador)</strong> checks the token consumption math. <em>(If quota exceeded &#8594; Returns 429 Error).</em></p>
+</li>
+<li>
+<p><strong>llm-d Orchestrator</strong> receives the validated request. It checks its cache map and routes the prompt to the most optimal worker.</p>
+</li>
+<li>
+<p><strong>vLLM Worker</strong> executes the forward pass (leveraging RoCE if spanning multiple nodes) and streams tokens back to <code>llm-d</code>.</p>
+</li>
+<li>
+<p><strong>Limitador</strong> asynchronously updates the user&#8217;s token usage in the backend database for chargeback monitoring.</p>
+</li>
+<li>
+<p><strong>Client</strong> receives the streamed response.</p>
+</li>
+</ol>
 </div>
 </div>
 </div>

@@ -3,8 +3,8 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Industrializing AI: The Business Case for Models as a Service :: Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</title>
-    <meta name="description" content="Why enterprises are moving from ticket-based AI to industrialized Models as a Service (MaaS) on Red Hat OpenShift AI 3.x to solve ROI, security, and scale challenges.">
+    <title>Industrializing AI: The Business Case for Models as a Service (OpenShift AI 3.3) :: Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</title>
+    <meta name="description" content="Why enterprises are moving from ticket-based AI to industrialized Models as a Service (MaaS) on Red Hat OpenShift AI 3.3 to solve ROI, security, and scale challenges.">
     <meta name="generator" content="Antora 3.1.3">
     <link rel="stylesheet" href="../../../_/css/site.css">
     <script>var uiRootPath = '../../../_'</script>
@@ -91,7 +91,7 @@
 <nav class="breadcrumbs" aria-label="breadcrumbs">
   <ul>
     <li><a href="../index.html">Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</a></li>
-    <li><a href="index.html">Industrializing AI: The Business Case for Models as a Service</a></li>
+    <li><a href="index.html">Industrializing AI: The Business Case for Models as a Service (OpenShift AI 3.3)</a></li>
   </ul>
 </nav>
 </div>
@@ -100,23 +100,35 @@
   <div class="toc-menu"></div>
 </aside>
 <article class="doc">
-<h1 class="page">Industrializing AI: The Business Case for Models as a Service</h1>
+<h1 class="page">Industrializing AI: The Business Case for Models as a Service (OpenShift AI 3.3)</h1>
 <div id="preamble">
 <div class="sectionbody">
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+<div class="title">Technology Preview Notice</div>
+<div class="paragraph">
+<p>Models-as-a-Service (MaaS), including RoCE networking and specific hardware accelerators like IBM Spyre on x86, are currently available in Red Hat OpenShift AI 3.3 as <strong>Technology Preview</strong> features. They are not supported with Red Hat production service level agreements (SLAs). This course is designed to help you build a GitOps framework to test this functionality and provide feedback ahead of General Availability (GA).</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
 <div class="paragraph lead">
 <p><strong>Stop treating AI like a science project. Start running it like a factory.</strong></p>
 </div>
 <div class="paragraph">
-<p>In the early days of enterprise AI, data scientists were explorers. They requested hardware, downloaded models to their laptops, and ran experiments in isolation.</p>
+<p>In the early days of enterprise AI, data scientists were explorers. They requested hardware, downloaded models to their laptops, and ran experiments in isolation. Today, that model is broken.</p>
 </div>
 <div class="paragraph">
-<p>Today, that model is broken.</p>
+<p>As demand for Generative AI explodes, the "ticket-based" workflow has become a severe operational bottleneck. Expensive GPUs sit idle at night while teams fight for capacity during the day. "Shadow AI" proliferates as frustrated developers bypass IT to use public APIs, leaking proprietary data.</p>
 </div>
 <div class="paragraph">
-<p>As demand for Generative AI explodes, the "ticket-based" workflow—where teams file IT tickets to reserve GPUs—has become a bottleneck. Expensive H100s sit idle at night while teams fight for capacity during the day. "Shadow AI" proliferates as frustrated developers bypass IT to use public APIs, leaking proprietary data.</p>
-</div>
-<div class="paragraph">
-<p><strong>Models as a Service (MaaS)</strong> on Red Hat OpenShift AI 3.x is the answer. It is the shift from manual, static deployments to a <strong>centralized, API-first utility</strong> that optimizes cost, enforces security, and guarantees performance.</p>
+<p><strong>Models as a Service (MaaS)</strong> in Red Hat OpenShift AI 3.3 is the answer. It is the shift from manual, static deployments to a <strong>centralized, API-first utility</strong>. MaaS enables you to define service tiers with different rate limits and quotas, control access through API key authentication, and track resource consumption for cost allocation.</p>
 </div>
 </div>
 </div>
@@ -124,7 +136,7 @@
 <h2 id="_the_core_objection_why_not_just_use_a_public_api"><a class="anchor" href="#_the_core_objection_why_not_just_use_a_public_api"></a>The Core Objection: "Why not just use a Public API?"</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>This is the first question every CTO asks: <em>"Why build this? Why not just point our developers to OpenAI or Anthropic?"</em></p>
+<p>This is the first question every CTO asks: <em>"Why build this? Why not just point our developers to a public AI provider?"</em></p>
 </div>
 <div class="paragraph">
 <p>Public APIs are excellent for prototyping, but they fail at enterprise scale for three reasons:</p>
@@ -132,65 +144,83 @@
 <div class="olist arabic">
 <ol class="arabic">
 <li>
-<p><strong>The Cost Explosion:</strong> Public APIs charge per token. As you scale to thousands of employees and automated agents, costs become unpredictable and linear. MaaS allows you to <strong>cap your costs</strong> by owning the compute.</p>
+<p><strong>The Cost Explosion:</strong> Public APIs charge per token. As you scale to thousands of employees and automated agents, costs become unpredictable. MaaS allows you to <strong>cap your costs</strong> by owning the compute and enforcing strict token quotas.</p>
 </li>
 <li>
-<p><strong>The Privacy Gap:</strong> Sending sensitive IP, PII, or financial data to a public endpoint violates Zero Trust principles. With MaaS, traffic never leaves your cluster.</p>
+<p><strong>The Privacy Gap:</strong> Sending sensitive IP, PII, or financial data to a public endpoint violates Zero Trust principles. With MaaS, traffic never leaves your cluster, and access is governed by centralized authentication.</p>
 </li>
 <li>
-<p><strong>The "Noisy Neighbor" Latency:</strong> Public APIs offer no SLA on latency. In a mission-critical app, a 3-second pause is a failure. MaaS gives you predictable <strong>Time-To-First-Token (TTFT)</strong>.</p>
+<p><strong>The "Noisy Neighbor" Latency:</strong> Public APIs offer no SLA on latency. MaaS gives you predictable performance by physically isolating workloads and offering advanced hardware optimization.</p>
 </li>
 </ol>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_the_3_pillars_of_maas_value"><a class="anchor" href="#_the_3_pillars_of_maas_value"></a>The 3 Pillars of MaaS Value</h2>
+<h2 id="_the_3_pillars_of_maas_value_in_rhoai_3_3"><a class="anchor" href="#_the_3_pillars_of_maas_value_in_rhoai_3_3"></a>The 3 Pillars of MaaS Value in RHOAI 3.3</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Red Hat OpenShift AI 3.x introduces specific features to solve these challenges.</p>
+<p>Red Hat OpenShift AI 3.3 introduces a turn-key governance layer and advanced hardware capabilities to solve these enterprise challenges.</p>
 </div>
 <div class="sect2">
-<h3 id="_1_economic_efficiency_the_idle_iron_problem"><a class="anchor" href="#_1_economic_efficiency_the_idle_iron_problem"></a>1. Economic Efficiency (The "Idle Iron" Problem)</h3>
+<h3 id="_1_economic_efficiency_solving_idle_iron"><a class="anchor" href="#_1_economic_efficiency_solving_idle_iron"></a>1. Economic Efficiency (Solving "Idle Iron")</h3>
 <div class="ulist">
 <ul>
 <li>
-<p><strong>The Problem:</strong> A single model rarely utilizes 100% of an A100 GPU 100% of the time. If you dedicate one GPU per team, you are paying for idle silicon.</p>
+<p><strong>The Problem:</strong> A single model rarely utilizes 100% of an expensive GPU. Dedicating one GPU per team results in wasted budget.</p>
 </li>
 <li>
-<p><strong>The MaaS Solution:</strong> <strong>Dynamic GPU Slicing &amp; Sharing.</strong>
-Using technologies like <strong>MIG (Multi-Instance GPU)</strong> and the <strong>vLLM</strong> runtime, MaaS allows you to partition a single physical GPU into multiple "slices." You can run 4 distinct small models on one card, or serve 50 different teams from a shared pool, driving your hardware utilization from 20% to 80%.</p>
+<p><strong>The 3.3 Solution:</strong> <strong>GPU Time Slicing &amp; RoCE.</strong>
+OpenShift AI 3.3 maximizes hardware ROI through GPU time slicing, which enables multiple workloads to share a single physical GPU by dividing processing time. For massive models requiring multi-node setups, 3.3 introduces RoCE (RDMA over Converged Ethernet) with GPUDirect RDMA, enabling direct memory access between GPUs without CPU involvement for sub-microsecond latency.</p>
 </li>
 </ul>
 </div>
 </div>
 <div class="sect2">
-<h3 id="_2_governance_at_the_edge_the_wild_west_problem"><a class="anchor" href="#_2_governance_at_the_edge_the_wild_west_problem"></a>2. Governance at the Edge (The "Wild West" Problem)</h3>
+<h3 id="_2_turn_key_governance_solving_the_wild_west"><a class="anchor" href="#_2_turn_key_governance_solving_the_wild_west"></a>2. Turn-Key Governance (Solving the "Wild West")</h3>
 <div class="ulist">
 <ul>
 <li>
-<p><strong>The Problem:</strong> Once a model is deployed, who is using it? How much? Are they authorized?</p>
+<p><strong>The Problem:</strong> Managing who has access to which model, and preventing a single runaway script from crashing the system.</p>
 </li>
 <li>
-<p><strong>The MaaS Solution:</strong> <strong>Token-Aware Rate Limiting.</strong>
-RHOAI 3.x integrates <strong>Kuadrant</strong> and the <strong>Gateway API</strong>. Unlike standard load balancers that only count "requests," Kuadrant counts <strong>tokens</strong>. You can create strict policies (e.g., "The Marketing Team gets 1M tokens/day; Engineering gets 5M"). This prevents a single runaway script from draining your budget or crashing the system.</p>
+<p><strong>The 3.3 Solution:</strong> <strong>Tier-Based Access Control.</strong>
+Through the integration of Kuadrant (Authorino and Limitador), RHOAI 3.3 introduces a strict tier system. Administrators can map OpenShift user groups to Default Tiers (Free, Premium, and Enterprise). These tiers mathematically enforce exact request rate limits and token consumption limits at the network edge.</p>
 </li>
 </ul>
 </div>
 </div>
 <div class="sect2">
-<h3 id="_3_developer_velocity_the_friction_problem"><a class="anchor" href="#_3_developer_velocity_the_friction_problem"></a>3. Developer Velocity (The "Friction" Problem)</h3>
+<h3 id="_3_the_pathway_to_agentic_ai"><a class="anchor" href="#_3_the_pathway_to_agentic_ai"></a>3. The Pathway to Agentic AI</h3>
 <div class="ulist">
 <ul>
 <li>
-<p><strong>The Problem:</strong> Developers don&#8217;t want to learn Kubernetes, KServe, or Pod specs. They just want an endpoint.</p>
+<p><strong>The Problem:</strong> Simple chatbots are no longer sufficient. Enterprises want to deploy autonomous AI agents that can securely interact with internal databases and execute multi-step tasks.</p>
 </li>
 <li>
-<p><strong>The MaaS Solution:</strong> <strong>Standardized APIs.</strong>
-The platform exposes an <strong>OpenAI-compatible schema</strong>. Developers simply change the <code>base_url</code> in their code. They don&#8217;t know (or care) if the model is running on an NVIDIA H100 or an Intel Gaudi accelerator; they just get a response.</p>
+<p><strong>The 3.3 Solution:</strong> <strong>Standardized, Governed APIs.</strong>
+MaaS provides developers with an OpenAI-compatible API. By standardizing communication protocols (like the Model Context Protocol and Llama Stack API) within a governed, rate-limited environment, organizations can safely deploy intelligent autonomous agents without risking runaway compute costs.</p>
 </li>
 </ul>
 </div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_the_operational_divide_who_does_what"><a class="anchor" href="#_the_operational_divide_who_does_what"></a>The Operational Divide: Who Does What?</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Industrializing AI requires a strict separation of duties, which this course will cover:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>The Cluster Administrator:</strong> Handles the infrastructure. They enable the MaaS components, configure the Kubernetes Gateway API, and ensure Kuadrant is running.</p>
+</li>
+<li>
+<p><strong>The OpenShift AI Administrator:</strong> Handles the business logic. They define the Service Tiers, assign user groups, generate API keys, and monitor token consumption for cross-departmental chargebacks.</p>
+</li>
+</ul>
 </div>
 </div>
 </div>
@@ -198,7 +228,7 @@ The platform exposes an <strong>OpenAI-compatible schema</strong>. Developers si
 <h2 id="_your_learning_journey"><a class="anchor" href="#_your_learning_journey"></a>Your Learning Journey</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>This course transforms you from a "Cluster Admin" into an "AI Platform Architect."</p>
+<p>This course uses a <strong>GitOps-First</strong> approach. We will use the 3.3 UI to understand the concepts, but we will deploy the underlying Kubernetes Custom Resources to ensure your AI factory is version-controlled and reproducible.</p>
 </div>
 <table class="tableblock frame-all grid-all stretch">
 <colgroup>
@@ -214,31 +244,22 @@ The platform exposes an <strong>OpenAI-compatible schema</strong>. Developers si
 <tbody>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong>1. Strategy (The Choice)</strong></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Stop guessing. Learn when to use <strong>Dedicated Serving</strong> (for massive, single models) vs. <strong>MaaS/Distributed Serving</strong> (for shared, high-concurrency APIs).</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Stop guessing. Learn when to use <strong>Standalone Model Serving</strong> vs. <strong>Distributed MaaS</strong> (the <code>llm-d</code> engine).</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong>2. Taxonomy (The Language)</strong></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Master the RHOAI 3.x vocabulary: <strong>vLLM</strong> (The Engine), <strong>Gateway API</strong> (The Router), and <strong>TrustyAI</strong> (The Watchdog).</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Master the RHOAI 3.3 vocabulary: <strong>llm-d</strong> (The Engine), <strong>Kuadrant</strong> (The Policy Enforcer), and <strong>Service Tiers</strong> (The Business Logic).</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong>3. Architecture (The Blueprint)</strong></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">A deep dive into the stack: How <strong>KEDA</strong> scales based on queue depth and how <strong>Authorino</strong> enforces Zero Trust.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A deep dive into the stack: How Kuadrant limits tokens, how the Gateway API routes traffic, and how RoCE networks operate.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong>4. Lab (The Build)</strong></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Hands-on:</strong> You will deploy the OpenShift AI Operator, configure the <strong>Gateway</strong>, deploy a model with <strong>vLLM</strong>, and apply a <strong>Rate Limit Policy</strong> to block abusive traffic.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Hands-on:</strong> You will define Service Tiers, deploy a model with the <code>llm-d</code> runtime published as a MaaS endpoint, generate an API key, and test token rate-limiting.</p></td>
 </tr>
 </tbody>
 </table>
-<div class="paragraph text-center">
-<p><strong>Ready to build the factory?</strong><br>
-<a href="strategy.html"><strong>Step 1: Choose Your Strategy (Dedicated vs. MaaS) &gt;</strong></a></p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-none hljs"></code></pre>
-</div>
-</div>
 </div>
 </div>
 </article>

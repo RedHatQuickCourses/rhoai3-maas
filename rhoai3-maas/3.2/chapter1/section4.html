@@ -3,10 +3,10 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Day-2 Operations: Keeping the Factory Running :: Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</title>
+    <title>Day-2 Operations: Keeping the Factory Running (OpenShift AI 3.3) :: Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</title>
     <link rel="prev" href="section3.html">
     <link rel="next" href="quiz.html">
-    <meta name="description" content="How to monitor, debug, and tune the Red Hat OpenShift AI 3.x MaaS stack when things go wrong.">
+    <meta name="description" content="How to monitor, debug, and tune the Red Hat OpenShift AI 3.3 distributed MaaS stack when things go wrong.">
     <meta name="generator" content="Antora 3.1.3">
     <link rel="stylesheet" href="../../../_/css/site.css">
     <script>var uiRootPath = '../../../_'</script>
@@ -102,17 +102,17 @@
   <div class="toc-menu"></div>
 </aside>
 <article class="doc">
-<h1 class="page">Day-2 Operations: Keeping the Factory Running</h1>
+<h1 class="page">Day-2 Operations: Keeping the Factory Running (OpenShift AI 3.3)</h1>
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph lead">
 <p><strong>Building the factory is Step 1. Keeping it running is the rest of your career.</strong></p>
 </div>
 <div class="paragraph">
-<p>In a distributed MaaS environment, a "broken" service isn&#8217;t just a crashing pod. It could be a misconfigured Gateway route, an aggressive rate limit, or a saturated GPU.</p>
+<p>In an industrialized MaaS environment, a "broken" service is rarely just a crashing pod. Because OpenShift AI 3.3 disaggregates the architecture, an issue could be a misconfigured Gateway route, a strict Connectivity Link (Kuadrant) rate limit, a missing OpenShift group mapping in your Service Tiers, or saturated GPU memory.</p>
 </div>
 <div class="paragraph">
-<p>This guide covers the critical observability signals and the three most common failure scenarios in the RHOAI 3.x stack.</p>
+<p>This guide covers the critical observability signals and the most common failure scenarios in the RHOAI 3.3 MaaS stack.</p>
 </div>
 </div>
 </div>
@@ -120,244 +120,197 @@
 <h2 id="_1_the_dashboard_what_to_watch"><a class="anchor" href="#_1_the_dashboard_what_to_watch"></a>1. The Dashboard: What to Watch</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Before debugging, you need visibility. Do not rely on user complaints.</p>
+<p>Before debugging, you need visibility. Do not rely solely on user complaints. OpenShift AI 3.3 provides out-of-the-box metrics for monitoring the model serving platform.</p>
 </div>
 <div class="sect2">
-<h3 id="_key_metrics_prometheus_console"><a class="anchor" href="#_key_metrics_prometheus_console"></a>Key Metrics (Prometheus / Console)</h3>
+<h3 id="_key_metrics_openshift_observe_prometheus"><a class="anchor" href="#_key_metrics_openshift_observe_prometheus"></a>Key Metrics (OpenShift Observe / Prometheus)</h3>
+<div class="paragraph">
+<p>You can query these metrics directly in the OpenShift web console under the Developer perspective &#8594; Observe.</p>
+</div>
 <table class="tableblock frame-all grid-all stretch">
 <colgroup>
-<col style="width: 20%;">
-<col style="width: 40%;">
-<col style="width: 40%;">
+<col style="width: 33.3333%;">
+<col style="width: 66.6667%;">
 </colgroup>
 <thead>
 <tr>
 <th class="tableblock halign-left valign-top">Metric</th>
 <th class="tableblock halign-left valign-top">What it tells you</th>
-<th class="tableblock halign-left valign-top">Alert Threshold</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>TTFT (Time To First Token)</strong></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">The latency user perceives. High TTFT means the system is queuing requests or the GPU is overloaded.</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">&gt; 200ms (for interactive chat)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Number of Requests</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Evaluated via <code>sum(increase(vllm:request_success_total{&#8230;&#8203;}))</code>. Tracks the throughput of the factory. Sudden drops indicate upstream issues or model crashes.</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Token Generation Rate</strong></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">The throughput of the factory. Sudden drops indicate upstream issues or model crashes.</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">&lt; 10 tokens/sec (per stream)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Average Response Time (ms)</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The latency the user perceives. High times mean the <code>llm-d</code> system is queuing requests or the GPUs are overloaded.</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Gateway 4xx/5xx Rate</strong></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>429:</strong> Kuadrant is blocking traffic (Good/Policy).<br>
-<strong>404:</strong> Route misconfiguration (Bad).<br>
-<strong>503:</strong> vLLM backend is down or scaling from zero (Bad).</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">&gt; 1% (excluding valid 429s)</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>GPU Memory Utilization</strong></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">How full the KV Cache is. If this hits 100%, vLLM may swap to CPU or reject requests.</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">&gt; 95% sustained</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>GPU Cache Usage over Time</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Available in the NIM Metrics tab (if using NVIDIA NIMs) or via Prometheus. How full the KV Cache is. If this hits 100%, requests will be rejected or severely delayed.</p></td>
 </tr>
 </tbody>
 </table>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_2_troubleshooting_scenario_a_the_broken_door_404_not_found"><a class="anchor" href="#_2_troubleshooting_scenario_a_the_broken_door_404_not_found"></a>2. Troubleshooting Scenario A: "The Broken Door" (404 Not Found)</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p><strong>Symptom:</strong> You <code>curl</code> the endpoint and get <code>404 Not Found</code>.
-<strong>The Component:</strong> Gateway API.</p>
-</div>
-<div class="paragraph">
-<p>In RHOAI 3.x, the Service Mesh/Gateway is strict. A 404 usually means the <strong>HTTPRoute</strong> is not correctly attached to the <strong>Gateway</strong>.</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p><strong>Diagnosis:</strong></p>
-</li>
-</ul>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre># 1. Check if the HTTPRoute is accepted
-oc describe httproute granite-route -n maas-production</pre>
-</div>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p><strong>Look for:</strong> <code>Conditions: Accepted = False</code>.</p>
-</li>
-<li>
-<p><strong>Common Fixes:</strong></p>
-<div class="ulist">
-<ul>
-<li>
-<p><strong>Hostname Mismatch:</strong> Does the <code>curl</code> header (<code>-H "Host: api.maas.example.com"</code>) match the <code>hostnames</code> in the YAML exactly?</p>
-</li>
-<li>
-<p><strong>Gateway Namespace:</strong> Did you reference the Gateway in the <code>istio-system</code> (or correct) namespace?</p>
-</li>
-<li>
-<p><strong>Port Mismatch:</strong> Does the <code>backendRef</code> point to port <code>8080</code> (vLLM default)?</p>
-</li>
-</ul>
-</div>
-</li>
-</ul>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_3_troubleshooting_scenario_b_the_stop_sign_429_too_many_requests"><a class="anchor" href="#_3_troubleshooting_scenario_b_the_stop_sign_429_too_many_requests"></a>3. Troubleshooting Scenario B: "The Stop Sign" (429 Too Many Requests)</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p><strong>Symptom:</strong> Users report their requests are being rejected.
-<strong>The Component:</strong> Kuadrant (Rate Limiting).</p>
-</div>
-<div class="paragraph">
-<p>This is usually "working as designed," but you need to verify <strong>why</strong>.</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p><strong>Diagnosis:</strong></p>
-</li>
-</ul>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre># 1. Check the RateLimitPolicy status
-oc describe ratelimitpolicy granite-protection -n maas-production</pre>
-</div>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p><strong>Check the Headers:</strong> Run <code>curl -v</code>. Kuadrant injects headers telling you the limit.</p>
-<div class="ulist">
-<ul>
-<li>
-<p><code>x-ratelimit-remaining: 0</code></p>
-</li>
-<li>
-<p><code>x-ratelimit-reset: 5</code></p>
-</li>
-</ul>
-</div>
-</li>
-<li>
-<p><strong>Fix:</strong></p>
-<div class="ulist">
-<ul>
-<li>
-<p>If legitimate traffic is blocked, edit the <code>RateLimitPolicy</code> YAML to increase the <code>limits</code> bucket.</p>
-</li>
-<li>
-<p><strong>Pro Tip:</strong> In RHOAI 3.x, ensure you are counting <strong>Tokens</strong>, not just Requests, if you configured specific descriptors.</p>
-</li>
-</ul>
-</div>
-</li>
-</ul>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_4_troubleshooting_scenario_c_the_silent_queue_high_latency_pending_pods"><a class="anchor" href="#_4_troubleshooting_scenario_c_the_silent_queue_high_latency_pending_pods"></a>4. Troubleshooting Scenario C: "The Silent Queue" (High Latency / Pending Pods)</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p><strong>Symptom:</strong> Requests succeed (200 OK) but take 10+ seconds to start (High TTFT).
-<strong>The Component:</strong> KEDA &amp; vLLM.</p>
-</div>
-<div class="paragraph">
-<p>This means the "Queue" is full, and KEDA isn&#8217;t scaling fast enough.</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p><strong>Diagnosis:</strong></p>
-</li>
-</ul>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre># 1. Check the HorizontalPodAutoscaler (HPA) generated by KEDA
-oc get hpa -n maas-production</pre>
-</div>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p><strong>Look for:</strong> <code>TARGETs</code> showing <code>10/1</code> (Current/Target). If the current value is high, KEDA is trying to scale.</p>
-</li>
-<li>
-<p><strong>Why isn&#8217;t it scaling?</strong></p>
-</li>
-</ul>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre>oc get pods -n maas-production
-# Status: Pending?</pre>
-</div>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p><strong>Root Cause:</strong> <strong>GPU Starvation.</strong> You have hit the physical limits of your cluster. HPA wants 5 pods, but you only have GPUs for 2.</p>
-</li>
-<li>
-<p><strong>Fix:</strong></p>
-<div class="ulist">
-<ul>
-<li>
-<p><strong>Short Term:</strong> Reduce <code>minReplicas</code> or <code>maxReplicas</code>.</p>
-</li>
-<li>
-<p><strong>Long Term:</strong> Purchase more nodes or enable <strong>MIG (Multi-Instance GPU)</strong> to slice existing cards into smaller units.</p>
-</li>
-</ul>
-</div>
-</li>
-</ul>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_5_tuning_vllm_for_performance"><a class="anchor" href="#_5_tuning_vllm_for_performance"></a>5. Tuning vLLM for Performance</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>If your architecture is correct but the model is just <strong>slow</strong>, tune the engine.</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml"># Inside your ServingRuntime YAML
-args:
-  - "--gpu-memory-utilization=0.95" # Increase KV Cache space
-  - "--max-model-len=4096"          # Cap context to save memory
-  - "--enforce-eager"               # Use for debugging CUDA graph issues</code></pre>
-</div>
-</div>
-<div class="admonitionblock tip">
+<div class="admonitionblock note">
 <table>
 <tr>
 <td class="icon">
-<i class="fa icon-tip" title="Tip"></i>
+<i class="fa icon-note" title="Note"></i>
 </td>
 <td class="content">
-<div class="title">The "OOM" Trap</div>
+<div class="title">The Cold Start Trap</div>
 <div class="paragraph">
-<p>If vLLM crashes with <code>OOMKilled</code>, it is not usually the <strong>model weights</strong>; it is the <strong>KV Cache</strong> growing too large during long conversations. Decrease <code>--gpu-memory-utilization</code> to reserve a buffer for overhead.</p>
+<p>Certain vLLM metrics are available only <strong>after</strong> an inference request is processed by a deployed model. To generate and view these metrics, you must first make an inference request to the model.</p>
 </div>
 </td>
 </tr>
 </table>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_2_troubleshooting_scenario_a_the_locked_door_401_403_errors"><a class="anchor" href="#_2_troubleshooting_scenario_a_the_locked_door_401_403_errors"></a>2. Troubleshooting Scenario A: The Locked Door (401 / 403 Errors)</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In 3.3, MaaS is strictly governed by Red Hat Connectivity Link (Authorino). If a user cannot access a model, it is usually a governance failure, not an infrastructure failure.</p>
+</div>
+<div class="sect2">
+<h3 id="_401_unauthorized"><a class="anchor" href="#_401_unauthorized"></a>401 Unauthorized</h3>
+<div class="paragraph">
+<p><strong>Symptom:</strong> User receives an <code>Invalid or expired token</code> error.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Cause:</strong> The user is likely passing a standard Kubernetes ServiceAccount token instead of a MaaS-generated token.</p>
+</li>
+<li>
+<p><strong>Fix:</strong> Users must generate a MaaS-specific token from the dashboard. Alternatively, if passing a JWT programmatically, ensure the format is exactly <code>Authorization: Bearer &lt;token&gt;</code>.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_403_forbidden"><a class="anchor" href="#_403_forbidden"></a>403 Forbidden</h3>
+<div class="paragraph">
+<p><strong>Symptom:</strong> User receives <code>Access denied. Your tier does not have permission to access this model.</code>.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Cause:</strong> The model exists, but Kubernetes RBAC RoleBindings are missing, or the user&#8217;s OpenShift group is not mapped to the authorized Tier.</p>
+</li>
+<li>
+<p><strong>Diagnosis:</strong></p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># 1. Check if the RoleBinding exists for the user's tier:
+oc get rolebindings -n &lt;your-project-namespace&gt; | grep &lt;your-model-name&gt;
+
+# 2. Verify how the MaaS API is resolving the user's tier based on their group:
+oc exec -n redhat-ods-applications deployment/maas-api -- curl -s http://localhost:8080/v1/tiers/lookup -H "Content-Type: application/json" -d '{"groups": ["&lt;user-group-name&gt;"]}'</code></pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_3_troubleshooting_scenario_b_the_stop_sign_429_too_many_requests"><a class="anchor" href="#_3_troubleshooting_scenario_b_the_stop_sign_429_too_many_requests"></a>3. Troubleshooting Scenario B: The Stop Sign (429 Too Many Requests)</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><strong>Symptom:</strong> Users report their requests are being rejected with a <code>429</code> status code and a <code>Token quota exceeded</code> or <code>Rate limit exceeded</code> message.
+<strong>The Component:</strong> Kuadrant (Limitador).</p>
+</div>
+<div class="paragraph">
+<p>This means the governance factory is working as designed. However, you need to verify why it is triggering.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Check the Headers:</strong> Inspect the HTTP response headers. Limitador injects data to tell the client exactly what happened:</p>
+<div class="ulist">
+<ul>
+<li>
+<p><code>X-RateLimit-Limit</code></p>
+</li>
+<li>
+<p><code>X-RateLimit-Remaining</code></p>
+</li>
+<li>
+<p><code>Retry-After</code></p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p><strong>Fix / Mitigation:</strong></p>
+<div class="ulist">
+<ul>
+<li>
+<p>If legitimate traffic is being blocked, the OpenShift AI Administrator needs to edit the Tier settings in the UI to increase the Token Consumption Limits or Request Rate Limits.</p>
+</li>
+<li>
+<p>If the user is sharing a token across multiple applications, advise them to use separate API keys, as limits apply to the aggregate usage.</p>
+</li>
+</ul>
+</div>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_4_troubleshooting_scenario_c_the_ghost_ui_maas_tab_missing"><a class="anchor" href="#_4_troubleshooting_scenario_c_the_ghost_ui_maas_tab_missing"></a>4. Troubleshooting Scenario C: The Ghost UI (MaaS Tab Missing)</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><strong>Symptom:</strong> The Models-as-a-Service tab does not appear in the OpenShift AI dashboard under AI Asset Endpoints.
+<strong>The Component:</strong> DataScienceCluster &amp; OdhDashboardConfig.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Diagnosis &amp; Fix:</strong></p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># 1. Verify the MaaS API backend component is actually running:
+oc get pods -n redhat-ods-applications -l app=maas-api
+# 2. Check if the Dashboard feature flag is enabled:
+oc get odhdashboardconfig odh-dashboard-config -n redhat-ods-applications -o yaml | grep modelAsService</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Ensure that the <code>spec.dashboardConfig.modelAsService</code> is set to <code>true</code>. If it was recently changed, you may need to hard refresh your browser or wait for the dashboard pods to reload.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_5_troubleshooting_scenario_d_the_silent_queue_high_latency_pending_pods"><a class="anchor" href="#_5_troubleshooting_scenario_d_the_silent_queue_high_latency_pending_pods"></a>5. Troubleshooting Scenario D: The Silent Queue (High Latency / Pending Pods)</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><strong>Symptom:</strong> Requests succeed (200 OK) but take a long time, or inference pods stay in a <code>Pending</code> state.
+<strong>The Component:</strong> <code>llm-d</code>, vLLM, and Hardware.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Cause 1: GPU Starvation.</strong> If the pod requests <code>nvidia.com/gpu: 1</code> but no node can satisfy it, the pod will pend. Check the cluster queue configuration to ensure requested resources do not exceed available quotas.</p>
+</li>
+<li>
+<p><strong>Cause 2: Image Pull Timeouts.</strong> In 3.3, if your <code>llm-d</code> or vLLM container image is exceptionally large, the scheduler (Kueue) might terminate the pod before it finishes pulling. By default, Kueue waits 5 minutes.</p>
+</li>
+<li>
+<p><strong>Fix:</strong> Verify hardware availability (<code>oc get nodes -l nvidia.com/gpu.present=true</code> ), or configure the deployment strategy to <code>Recreate</code> instead of <code>Rolling update</code> if you are operating in a resource-constrained environment to prevent double-allocation of GPUs during rollouts.</p>
+</li>
+</ul>
 </div>
 </div>
 </div>
@@ -365,30 +318,27 @@ args:
 <h2 id="_conclusion_you_are_ready"><a class="anchor" href="#_conclusion_you_are_ready"></a>Conclusion: You Are Ready</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>You have completed the <strong>Red Hat OpenShift AI 3.x MaaS Learning Journey</strong>.</p>
+<p>You have completed the <strong>Red Hat OpenShift AI 3.3 Models-as-a-Service Learning Journey</strong>.</p>
 </div>
 <div class="ulist">
 <ul>
 <li>
-<p>You understand the <strong>Strategy</strong> (MaaS vs. Dedicated).</p>
+<p>You understand the <strong>Strategy</strong> (Standalone vs. Distributed <code>llm-d</code>).</p>
 </li>
 <li>
-<p>You speak the <strong>Taxonomy</strong> (vLLM, Gateway, Kuadrant).</p>
+<p>You speak the <strong>Taxonomy</strong> (Kuadrant, RoCE, Tiers).</p>
 </li>
 <li>
-<p>You have <strong>Built the Factory</strong> (Lab).</p>
+<p>You have <strong>Built the Factory</strong> (GitOps Lab).</p>
 </li>
 <li>
-<p>You can <strong>Fix the Machinery</strong> (Troubleshooting).</p>
+<p>You can <strong>Fix the Machinery</strong> (Day-2 Operations).</p>
 </li>
 </ul>
 </div>
 <div class="paragraph">
 <p><strong>Next Steps:</strong>
-Go to the <strong>Red Hat Hybrid Cloud Console</strong> and start your pilot.</p>
-</div>
-<div class="paragraph text-center">
-<p><strong>[End of Course]</strong></p>
+Go to the <strong>Red Hat Hybrid Cloud Console</strong> and start your pilot deployment.</p>
 </div>
 </div>
 </div>

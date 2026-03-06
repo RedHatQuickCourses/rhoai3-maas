@@ -3,9 +3,9 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Knowledge Check: MaaS on OpenShift AI 3.x :: Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</title>
+    <title>Knowledge Check: Industrializing AI (OpenShift AI 3.3) :: Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</title>
     <link rel="prev" href="section4.html">
-    <meta name="description" content="Short quiz to validate understanding of MaaS concepts, stack, and deployment.">
+    <meta name="description" content="Test your knowledge of Red Hat OpenShift AI 3.3 Models-as-a-Service architecture, governance, and strategy.">
     <meta name="generator" content="Antora 3.1.3">
     <link rel="stylesheet" href="../../../_/css/site.css">
     <script>var uiRootPath = '../../../_'</script>
@@ -101,129 +101,223 @@
   <div class="toc-menu"></div>
 </aside>
 <article class="doc">
-<h1 class="page">Knowledge Check: MaaS on OpenShift AI 3.x</h1>
+<h1 class="page">Knowledge Check: Industrializing AI (OpenShift AI 3.3)</h1>
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph lead">
 <p><strong>Did you master the factory floor? Let&#8217;s find out.</strong></p>
 </div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_question_1_the_value_proposition"><a class="anchor" href="#_question_1_the_value_proposition"></a>Question 1: The Value Proposition</h2>
-<div class="sectionbody">
 <div class="paragraph">
-<p><strong>Scenario:</strong> Your organization is debating whether to build an internal MaaS platform or use only public APIs (e.g., OpenAI) for LLM workloads.</p>
-</div>
-<div class="paragraph">
-<p><strong>Which benefit does MaaS provide that public APIs typically do not?</strong></p>
-</div>
-<div class="ulist checklist">
-<ul class="checklist">
-<li>
-<p><i class="fa fa-square-o"></i> A. Lower cost at very high, unpredictable usage.</p>
-</li>
-<li>
-<p><i class="fa fa-square-o"></i> B. Traffic and data stay on your private network (Zero Trust).</p>
-</li>
-<li>
-<p><i class="fa fa-check-square-o"></i> C. Both guaranteed SLOs without "noisy neighbors" and control over where data is processed.</p>
-</li>
-<li>
-<p><i class="fa fa-square-o"></i> D. No need to manage any infrastructure.</p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p><em>Answer: C. MaaS gives you control over capacity and governance so you can guarantee SLOs and keep data on-prem or in your cloud. Public APIs share capacity and may not meet enterprise security/compliance needs.</em></p>
+<p>You have explored the strategy, mastered the taxonomy, built the GitOps factory, and learned how to keep it running. Test your understanding with these 6 scenarios.</p>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_question_2_the_strategy"><a class="anchor" href="#_question_2_the_strategy"></a>Question 2: The Strategy</h2>
+<h2 id="_question_1_the_value_proposition_business_case"><a class="anchor" href="#_question_1_the_value_proposition_business_case"></a>Question 1: The Value Proposition (Business Case)</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p><strong>Scenario:</strong> You need to serve one large, fine-tuned model to a single internal application with predictable, low concurrency.</p>
-</div>
-<div class="paragraph">
-<p><strong>Which path is most appropriate?</strong></p>
+<p><strong>Scenario:</strong> Your organization is debating whether to build an internal MaaS platform or use only public APIs (e.g., OpenAI) for enterprise LLM workloads. <strong>Which benefit does MaaS provide that public APIs typically do not?</strong></p>
 </div>
 <div class="ulist checklist">
 <ul class="checklist">
 <li>
-<p><i class="fa fa-check-square-o"></i> A. Path A: Single-model deployment (e.g., KServe/TGIS or dedicated vLLM).</p>
+<p><i class="fa fa-square-o"></i> A. Lower compute costs at very high, unpredictable usage spikes.</p>
 </li>
 <li>
-<p><i class="fa fa-square-o"></i> B. Path B: MaaS with vLLM + llm-d and Gateway API for dynamic sharing.</p>
+<p><i class="fa fa-square-o"></i> B. The ability to completely avoid managing any infrastructure.</p>
 </li>
 <li>
-<p><i class="fa fa-square-o"></i> C. Use only public APIs.</p>
+<p><i class="fa fa-square-o"></i> C. Guaranteed SLOs (predictable latency) and mathematical control over where proprietary data is processed.</p>
 </li>
 <li>
-<p><i class="fa fa-square-o"></i> D. Deploy the model on a single laptop and expose it via ngrok.</p>
+<p><i class="fa fa-square-o"></i> D. Immediate access to the absolute largest models in the world without any setup.</p>
 </li>
 </ul>
 </div>
+<details>
+<summary class="title">Click here for the Answer</summary>
+<div class="content">
 <div class="paragraph">
-<p><em>Answer: A. For dedicated, low-concurrency workloads, Path A (single model) is simpler and avoids the overhead of the full MaaS stack. Path B is for high concurrency and shared API access.</em></p>
+<p><strong>Correct Answer: C</strong><br>
+MaaS gives you control over your capacity and governance. It allows you to guarantee Service Level Objectives (SLOs) without "noisy neighbors" and keeps proprietary data entirely within your private network (Zero Trust). Public APIs share capacity and expose data externally.</p>
 </div>
+</div>
+</details>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_question_3_the_stack"><a class="anchor" href="#_question_3_the_stack"></a>Question 3: The Stack</h2>
+<h2 id="_question_2_the_architecture_choice"><a class="anchor" href="#_question_2_the_architecture_choice"></a>Question 2: The Architecture Choice</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p><strong>What is the role of the Gateway API in the MaaS architecture?</strong></p>
+<p><strong>Scenario:</strong> Your enterprise needs to provide an internal, ChatGPT-like API for 500 developers across 10 different departments. You need to enforce token quotas to charge each department for their specific usage. <strong>Which inference architecture must you choose in OpenShift AI 3.3?</strong></p>
 </div>
 <div class="ulist checklist">
 <ul class="checklist">
 <li>
-<p><i class="fa fa-square-o"></i> A. It runs the vLLM inference engine.</p>
+<p><i class="fa fa-square-o"></i> A. A standard <code>InferenceService</code> using the standard <code>vLLM</code> runtime.</p>
 </li>
 <li>
-<p><i class="fa fa-square-o"></i> B. It stores model weights.</p>
+<p><i class="fa fa-square-o"></i> B. An <code>LLMInferenceService</code> using the Distributed Inference Server (<code>llm-d</code>) runtime.</p>
 </li>
 <li>
-<p><i class="fa fa-check-square-o"></i> C. It is the routing layer that receives client requests and forwards them to the correct inference backend.</p>
-</li>
-<li>
-<p><i class="fa fa-square-o"></i> D. It scales pods based on CPU.</p>
+<p><i class="fa fa-square-o"></i> C. The Caikit-TGIS standalone runtime.</p>
 </li>
 </ul>
 </div>
+<details>
+<summary class="title">Click here for the Answer</summary>
+<div class="content">
 <div class="paragraph">
-<p><em>Answer: C. The Gateway API is the "front door" for HTTP traffic; it routes requests to the appropriate backend (e.g., vLLM). vLLM runs inference; KEDA handles scaling.</em></p>
+<p><strong>Correct Answer: B</strong><br>
+In OpenShift AI 3.3, true MaaS capabilities—including the Gen AI Studio UI, API key generation, and tier-based token quotas—are exclusively supported by the <strong>Distributed Inference Server (<code>llm-d</code>)</strong>. Standard <code>vLLM</code> is used for standalone, isolated workloads that do not require multi-tenant governance.</p>
 </div>
+</div>
+</details>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_question_4_observability"><a class="anchor" href="#_question_4_observability"></a>Question 4: Observability</h2>
+<h2 id="_question_3_network_optimization"><a class="anchor" href="#_question_3_network_optimization"></a>Question 3: Network Optimization</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p><strong>Which metric is most directly tied to user-perceived responsiveness for LLM inference?</strong></p>
+<p><strong>Question:</strong> You are deploying a massive model (e.g., Llama-3-70B), which requires tensor parallelism across multiple physical worker nodes. To prevent the network from bottlenecking the GPU-to-GPU communication, <strong>what Technology Preview feature should your Cluster Administrator enable?</strong></p>
 </div>
 <div class="ulist checklist">
 <ul class="checklist">
 <li>
-<p><i class="fa fa-square-o"></i> A. CPU utilization of the node.</p>
+<p><i class="fa fa-square-o"></i> A. KEDA Autoscaling</p>
 </li>
 <li>
-<p><i class="fa fa-square-o"></i> B. Number of replicas.</p>
+<p><i class="fa fa-square-o"></i> B. GPU Time-Slicing</p>
 </li>
 <li>
-<p><i class="fa fa-check-square-o"></i> C. Time to First Token (TTFT).</p>
+<p><i class="fa fa-square-o"></i> C. RoCE (RDMA over Converged Ethernet)</p>
 </li>
 <li>
-<p><i class="fa fa-square-o"></i> D. Total number of requests per second.</p>
+<p><i class="fa fa-square-o"></i> D. The Gateway API</p>
 </li>
 </ul>
 </div>
+<details>
+<summary class="title">Click here for the Answer</summary>
+<div class="content">
 <div class="paragraph">
-<p><em>Answer: C. TTFT measures latency until the first token is streamed; users perceive responsiveness from this. CPU and replica count are operational metrics; request rate does not directly indicate latency.</em></p>
+<p><strong>Correct Answer: C</strong><br>
+<strong>RoCE</strong> allows GPUs on different physical nodes to communicate directly with sub-microsecond latency, bypassing the host CPU entirely. Time-slicing is used for sharing a single GPU among smaller models, and the Gateway API handles inbound client HTTP traffic, not backend GPU communication.</p>
 </div>
-<hr>
+</div>
+</details>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_question_4_investigating_access"><a class="anchor" href="#_question_4_investigating_access"></a>Question 4: Investigating Access</h2>
+<div class="sectionbody">
 <div class="paragraph">
-<p><strong>Congratulations on completing the Models as a Service (MaaS) learning journey.</strong></p>
+<p><strong>Question:</strong> A developer is trying to query your newly published 3.3 MaaS endpoint using a <code>curl</code> command. They receive a <code>401 Unauthorized</code> HTTP error. <strong>What is the most likely cause?</strong></p>
+</div>
+<div class="ulist checklist">
+<ul class="checklist">
+<li>
+<p><i class="fa fa-square-o"></i> A. They exceeded their Tier&#8217;s token limit for the minute.</p>
+</li>
+<li>
+<p><i class="fa fa-square-o"></i> B. They are using their standard OpenShift ServiceAccount token instead of generating a specific MaaS API Token.</p>
+</li>
+<li>
+<p><i class="fa fa-square-o"></i> C. The <code>llm-d</code> backend pods are still pending and waiting for GPU resources.</p>
+</li>
+<li>
+<p><i class="fa fa-square-o"></i> D. The HTTPRoute is missing.</p>
+</li>
+</ul>
+</div>
+<details>
+<summary class="title">Click here for the Answer</summary>
+<div class="content">
+<div class="paragraph">
+<p><strong>Correct Answer: B</strong><br>
+A <code>401</code> error means authentication failed at the Gateway (intercepted by Authorino). In 3.3 MaaS, standard Kubernetes tokens are not accepted; users must generate a specific MaaS token from the Gen AI Studio. Exceeding a limit results in a <code>429 Too Many Requests</code> error.</p>
+</div>
+</div>
+</details>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_question_5_the_governance_engine"><a class="anchor" href="#_question_5_the_governance_engine"></a>Question 5: The Governance Engine</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><strong>Question:</strong> Behind the scenes, <strong>which component is physically tracking the token consumption math</strong> and instructing the gateway to reject traffic when a user exceeds their Tier&#8217;s limits?</p>
+</div>
+<div class="ulist checklist">
+<ul class="checklist">
+<li>
+<p><i class="fa fa-square-o"></i> A. The vLLM Worker Pods</p>
+</li>
+<li>
+<p><i class="fa fa-square-o"></i> B. TrustyAI</p>
+</li>
+<li>
+<p><i class="fa fa-square-o"></i> C. Limitador (part of Kuadrant / Red Hat Connectivity Link)</p>
+</li>
+<li>
+<p><i class="fa fa-square-o"></i> D. The OpenShift Router</p>
+</li>
+</ul>
+</div>
+<details>
+<summary class="title">Click here for the Answer</summary>
+<div class="content">
+<div class="paragraph">
+<p><strong>Correct Answer: C</strong><br>
+<strong>Limitador</strong> tracks the token consumption counters globally across the cluster. It evaluates the math against the defined Service Tiers and instructs the Envoy proxy to drop traffic (<code>429</code> error) before it ever reaches the expensive vLLM pods.</p>
+</div>
+</div>
+</details>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_question_6_observability"><a class="anchor" href="#_question_6_observability"></a>Question 6: Observability</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><strong>Question:</strong> When monitoring the performance of your MaaS deployment, <strong>which metric is most directly tied to the end-user&#8217;s perceived responsiveness of an LLM?</strong></p>
+</div>
+<div class="ulist checklist">
+<ul class="checklist">
+<li>
+<p><i class="fa fa-square-o"></i> A. GPU Memory Utilization</p>
+</li>
+<li>
+<p><i class="fa fa-square-o"></i> B. Time to First Token (TTFT)</p>
+</li>
+<li>
+<p><i class="fa fa-square-o"></i> C. Total number of requests per second</p>
+</li>
+<li>
+<p><i class="fa fa-square-o"></i> D. CPU utilization of the orchestrator node</p>
+</li>
+</ul>
+</div>
+<details>
+<summary class="title">Click here for the Answer</summary>
+<div class="content">
+<div class="paragraph">
+<p><strong>Correct Answer: B</strong><br>
+<strong>TTFT (Time to First Token)</strong> measures the latency from request submission until the first word is streamed back to the user. While GPU utilization and request rates are important operational metrics, TTFT dictates whether the user feels the application is "fast" or "laggy."</p>
+</div>
+</div>
+</details>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_conclusion"><a class="anchor" href="#_conclusion"></a>Conclusion</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>If you answered these correctly, you understand the fundamental shift from one-off AI deployments to an industrialized AI utility.</p>
+</div>
+<div class="paragraph">
+<p>You are ready to architect, deploy, and govern Models-as-a-Service on Red Hat OpenShift AI 3.3.</p>
+</div>
+<div class="paragraph text-center">
+<p><strong>[End of Course]</strong></p>
 </div>
 </div>
 </div>
