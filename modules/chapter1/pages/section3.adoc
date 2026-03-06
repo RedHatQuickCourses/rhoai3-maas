@@ -1,204 +1,434 @@
-= Lab: Build Your MaaS Factory
+= Lab: Build Your Distributed MaaS Factory (OpenShift AI 3.3)
 :navtitle: Hands-On Lab
 :toc: macro
 :role: Developer & Platform Engineer
 :audience: Implementation Teams
-:description: A step-by-step guide to deploying a model with vLLM, exposing it via Kubernetes Gateway API, and enforcing rate limits with Kuadrant.
+:description: A step-by-step GitOps guide to deploying an LLMInferenceService with llm-d, enforcing Tier-based access, and generating tokens in OpenShift AI 3.3.
+
+[NOTE]
+.The GitOps vs. UI Disclaimer
+====
+OpenShift AI 3.3 introduces a rich "Gen AI Studio" dashboard for creating Tiers, deploying models, and generating API keys visually. While the UI provides a simplified experience, industrialized enterprises rely on Infrastructure-as-Code. 
+
+In this lab, we will bypass the UI. You will use the OpenShift CLI (`oc`) to deploy the underlying Custom Resources (CRs) that the UI generates behind the scenes. This equips you with the exact YAML manifests needed for your GitOps pipelines (e.g., ArgoCD).
+====
 
 [.lead]
-*Theory is over. It is time to build.*
+*Theory is over. It is time to build the factory.*
 
-In this lab, you will act as the Platform Engineer. You will not just "run a container." You will build a governed manufacturing line.
+In this lab, you will act as the Platform Engineer. You will deploy a generative AI model using the **Distributed Inference Server (`llm-d`)**, explicitly enable MaaS authentication, bind it to a specific service tier, and test the governed endpoint.
 
-You will deploy a Lightweight LLM (Granite-7B or similar), expose it through the new **Gateway API**, and apply a **Token-Aware Rate Limit** to prevent cost overruns.
 
 [IMPORTANT]
 .Prerequisites
 ====
-* **OpenShift Container Platform 4.16+**
-* **Red Hat OpenShift AI Operator** (Channel `fast-3.x`) installed.
-* **Red Hat OpenShift Service Mesh** (for Gateway API implementation) installed.
-* **Kuadrant Operator** installed (for Rate Limiting).
-* Access to a namespace with **GPU quota** (at least 1 NVIDIA A10G/A100 or equivalent).
-* The `oc` CLI tool logged in.
+* **OpenShift Container Platform 4.19.9+**.
+* **Red Hat OpenShift AI Operator 3.0+** installed.
+* **Red Hat Connectivity Link** (Kuadrant) installed and running.
+* The `DataScienceCluster` must have the `modelsAsService` component set to `Managed`.
+* A Gateway named `maas-default-gateway` must exist in the `openshift-ingress` namespace.
+* Access to a namespace with **GPU quota**.
 ====
 
-== Step 1: Initialize the Workspace
+== Step 0: Activate MaaS in the Control Plane (Cluster Admin)
 
-First, create a project for your MaaS utility.
+Before a developer can deploy an `LLMInferenceService`, the Cluster Administrator must lay the network foundation and explicitly enable the MaaS components. By default in 3.3, these features are turned off. 
 
+[TIP]
+.Architecture Note: The Gateway Prerequisite
+====
+The OpenShift AI Operator enforces strict architectural dependencies. It will refuse to provision the MaaS backend until it confirms that a Kubernetes `Gateway` exists to route the traffic. 
+====
+
+. **Create the Infrastructure Front Door (The Gateway):**
+First, we must create the `maas-default-gateway` in the `openshift-ingress` namespace.
++
+[source,bash]
+----
+cat <<EOF | oc apply -f -
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: Gateway
+metadata:
+  name: maas-default-gateway
+  namespace: openshift-ingress
+spec:
+  gatewayClassName: istio
+  listeners:
+  - name: http
+    port: 80
+    protocol: HTTP
+    allowedRoutes:
+      namespaces:
+        from: All
+EOF
+----
+
+. **Enable the MaaS Backend Component:**
+Now that the gateway exists, patch the `DataScienceCluster` (DSC) to set the `modelsAsService` component (nested under `kserve`) to `Managed`. 
++
+[source,bash]
+----
+oc patch datasciencecluster default-dsc --type=merge -p '{
+  "spec": {
+    "components": {
+      "kserve": {
+        "modelsAsService": {
+          "managementState": "Managed"
+        }
+      }
+    }
+  }
+}'
+----
+
+. **Enable the Gen AI Studio Dashboard:**
+Patch the `OdhDashboardConfig` to expose the new UI elements (Service Tiers, API Keys, and the Playground).
++
+[source,bash]
+----
+oc patch odhdashboardconfig odh-dashboard-config -n redhat-ods-applications --type=merge -p '{
+  "spec": {
+    "dashboardConfig": {
+      "modelAsService": true,
+      "genAiStudio": true
+    }
+  }
+}'
+----
+
+. **Verify Activation:**
+Wait a few moments for the operator to reconcile, then verify the MaaS API is running:
++
+[source,bash]
+----
+oc get pods -n redhat-ods-applications -l app=maas-api
+----
++
+*Result:* You should see `maas-api-xxx` pods in a **Running** state. If you refresh your OpenShift AI Dashboard, you will now see the **Gen AI Studio** and **Models as a Service** tabs.
+
+== Step 1: Initialize the Workspace & Service Account
+
+First, create a project for your MaaS utility and a ServiceAccount that will act as our "Developer" consuming the API.
+
+[source,bash]
+----
+oc new-project maas-production
+
+# Create a ServiceAccount representing our downstream application
+oc create serviceaccount llm-user -n maas-production
+----
+
+== Step 2: Deploy the Distributed Inference Engine (`llm-d`)
+
+In OpenShift AI 3.3, true MaaS governance is tied to the `llm-d` runtime. Instead of a standard `InferenceService`, we must deploy an `LLMInferenceService`. 
+
+We will also apply the critical `enable-auth` annotation to ensure Kuadrant intercepts the traffic.
+
+. **Create the `LLMInferenceService` (maas-model.yaml):**
++
+[source,yaml]
+----
+apiVersion: serving.kserve.io/v1alpha1
+kind: LLMInferenceService
+metadata:
+  name: qwen3-maas
+  namespace: maas-production
+  annotations:
+    # CRITICAL: This annotation tells Connectivity Link to enforce MaaS token authentication
+    security.opendatahub.io/enable-auth: "true" 
+spec:
+  replicas: 1
+  model:
+    uri: hf://RedHatAI/Qwen3-8B-FP8-dynamic
+    name: RedHatAI/Qwen3-8B-FP8-dynamic
+  router:
+    route: {}
+    gateway: {}
+    scheduler: {}
+  template:
+    containers:
+      - name: main
+        resources:
+          limits:
+            cpu: '4'
+            memory: 32Gi
+            nvidia.com/gpu: "1"
+          requests:
+            cpu: '2'
+            memory: 16Gi
+            nvidia.com/gpu: "1"
+----
+
+. **Apply the manifest:**
++
+[source,bash]
+----
+oc apply -f maas-model.yaml
+----
+
+*Checkpoint:* Run `oc get llminferenceservice -n maas-production` and wait until the service is **Ready**. Note: Pulling the model weights for the first time may take several minutes.
+
+== Step 3: Apply Tier-Based Governance via RBAC
+
+MaaS relies on Kubernetes RBAC to determine which Tiers (and thus which OpenShift Groups) are authorized to query the model.
+
+We will create a `Role` that allows querying the `LLMInferenceService`, and bind it to our `llm-user` ServiceAccount. In a real-world scenario, you would bind this to an OpenShift Group mapped to a MaaS Tier (e.g., the `premium-users` group).
+
+. **Create the Role and RoleBinding:**
++
+[source,bash]
+----
+cat <<EOF | oc apply -f -
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: llm-inference-viewer
+  namespace: maas-production
+rules:
+  - apiGroups: ["serving.kserve.io"]
+    resources: ["llminferenceservices"]
+    verbs: ["get"]
+    resourceNames: ["qwen3-maas"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: llm-user-binding
+  namespace: maas-production
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: llm-inference-viewer
+subjects:
+  - kind: ServiceAccount
+    name: llm-user
+    namespace: maas-production
+EOF
+----
+
+== Step 4: Generate the Authentication Token
+
+Because we annotated the model with `enable-auth: "true"`, standard unauthenticated requests will be blocked by Authorino. We must generate a JSON Web Token (JWT) for our ServiceAccount.
+
+[source,bash]
+----
+# Generate a token valid for 1 hour
+export MAAS_TOKEN=$(oc create token llm-user -n maas-production --duration=1h)
+
+# Retrieve the Base Route for the MaaS Gateway
+export CLUSTER_DOMAIN=$(oc get ingresses.config.openshift.io cluster -o jsonpath='{.spec.domain}')
+export INFERENCE_URL="https://maas.${CLUSTER_DOMAIN}"
+----
+
+== Step 5: Verification & The Governance Test
+
+Let's prove the factory works and the guards are active.
+
+. **Test 1: The Unauthorized Attempt (Expecting 401)**
++
+Send a request *without* the token to verify the Gateway is protecting the model.
++
+[source,bash]
+----
+curl -v -X POST "${INFERENCE_URL}/v1/chat/completions" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "RedHatAI/Qwen3-8B-FP8-dynamic",
+    "messages": [{"role": "user", "content": "Hello!"}]
+  }'
+----
++
+*Result:* You should receive a `401 Unauthorized` response. The request was dropped at the edge, saving GPU cycles.
+
+. **Test 2: The Authorized "Happy Path" (Expecting 200 OK)**
++
+Now, inject the JWT into the Authorization header.
++
+[source,bash]
+----
+curl -k -X POST "${INFERENCE_URL}/v1/chat/completions" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer ${MAAS_TOKEN}" \
+  -d '{
+    "model": "RedHatAI/Qwen3-8B-FP8-dynamic",
+    "messages": [{"role": "user", "content": "Explain industrialized AI in one sentence."}],
+    "max_tokens": 50
+  }'
+----
++
+*Result:* You should receive a successful JSON response containing the model's reply.
+
+. **Test 3: Checking the Governance Headers**
+If you run the above command with the `-v` (verbose) flag, inspect the HTTP response headers. You will see Kuadrant/Limitador injecting rate-limit tracking headers:
+* `X-RateLimit-Limit`
+* `X-RateLimit-Remaining`
+
+**Congratulations.** You have successfully deployed a declarative, GitOps-driven MaaS architecture that is:
+1.  **Distributed** (Using `llm-d` for performance).
+2.  **Accessible** (Using the standard Gateway API).
+3.  **Governed** (Protected by Connectivity Link/Kuadrant).
+
+
+
+---
+---
+
+== Lab: Build Your Distributed MaaS Factory (OpenShift AI 3.3)
+:navtitle: Hands-On Lab
+:toc: macro
+:role: Developer & Platform Engineer
+:audience: Implementation Teams
+:description: A step-by-step GitOps guide to activating MaaS, deploying an LLMInferenceService with llm-d, and enforcing Tier-based access.
+
+[IMPORTANT]
+.Industrialized Deployment Notice
+====
+This lab follows a **GitOps-First (CLI)** approach. While OpenShift AI 3.3 provides a "Gen AI Studio" UI for simplified setup, production environments require declarative manifests. You will use the CLI to build the foundation, ensuring your AI factory is reproducible and version-controlled.
+====
+
+[.lead]
+*Theory is over. It is time to build.*
+
+In this lab, you will act as both the Cluster Admin (activating the platform) and the Platform Engineer (deploying the model). You will deploy a generative AI model using the **Distributed Inference Server (llm-d)**, enable MaaS authentication, and verify the governed endpoint.
+
+[IMPORTANT]
+.Prerequisites & Hard Dependencies
+====
+* **OpenShift Container Platform 4.16+**.
+* **Red Hat OpenShift AI Operator 3.0+**.
+* **Red Hat OpenShift Service Mesh** (Istio) installed.
+* **Red Hat Connectivity Link (Kuadrant)** installed and initialized. (The MaaS API will fail to start if the `AuthPolicy` CRDs from this operator are missing).
+====
+
+== Step 0: Activate MaaS in the Control Plane (Cluster Admin)
+
+Before a developer can use MaaS, the admin must lay the network foundation and enable the backend components.
+
+. **Create the Infrastructure Front Door (The Gateway):**
+OpenShift AI requires a `Gateway` to exist in the `openshift-ingress` namespace before it will provision the MaaS API.
++
+[source,bash]
+----
+cat <<EOF | oc apply -f -
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: Gateway
+metadata:
+  name: maas-default-gateway
+  namespace: openshift-ingress
+spec:
+  gatewayClassName: istio
+  listeners:
+  - name: http
+    port: 80
+    protocol: HTTP
+    allowedRoutes:
+      namespaces:
+        from: All
+EOF
+----
+
+. **Enable the MaaS Backend Component:**
+The activation flag is nested inside the `kserve` component of the `DataScienceCluster` (DSC).
++
+[source,bash]
+----
+oc patch datasciencecluster default-dsc --type=merge -p '{
+  "spec": {
+    "components": {
+      "kserve": {
+        "modelsAsService": {
+          "managementState": "Managed"
+        }
+      }
+    }
+  }
+}'
+----
+
+. **Activate the Gen AI Studio UI:**
+Ensure the dashboard feature flags are enabled.
++
+[source,bash]
+----
+oc patch odhdashboardconfig odh-dashboard-config -n redhat-ods-applications --type=merge -p '{
+  "spec": {
+    "dashboardConfig": {
+      "modelAsService": true,
+      "genAiStudio": true
+    }
+  }
+}'
+----
+
+== Step 1: Deploy the Distributed Inference Engine (llm-d)
+
+Now, we deploy the model. In 3.3, MaaS governance is tied to the **`LLMInferenceService`** resource and the **`llm-d`** runtime.
+
+. **Create the Project:**
++
 [source,bash]
 ----
 oc new-project maas-production
 ----
 
-== Step 2: Deploy the Inference Engine (vLLM)
-
-We will define a `ServingRuntime` that tells OpenShift AI how to run the vLLM engine, and an `InferenceService` to deploy the specific model.
-
-. **Create the ServingRuntime (vllm-runtime.yaml):**
+. **Deploy the Model (maas-model.yaml):**
+Note the `security.opendatahub.io/enable-auth: "true"` annotation—this is what triggers Kuadrant to protect the endpoint.
 +
 [source,yaml]
 ----
 apiVersion: serving.kserve.io/v1alpha1
-kind: ServingRuntime
+kind: LLMInferenceService
 metadata:
-  name: vllm-runtime
+  name: granite-maas
   namespace: maas-production
+  annotations:
+    security.opendatahub.io/enable-auth: "true" 
 spec:
-  supportedModelFormats:
-    - name: vLLM
-      version: "1"
-      autoSelect: true
-  multiModel: false
-  containers:
-    - name: kserve-container
-      image: quay.io/modh/vllm:stable
-      command: ["python3", "-m", "vllm.entrypoints.openai.api_server"]
-      args:
-        - "--model=/mnt/models"
-        - "--port=8080"
-        - "--gpu-memory-utilization=0.9"
-      resources:
-        requests:
-          cpu: "4"
-          memory: "16Gi"
-          nvidia.com/gpu: "1"
-        limits:
-          nvidia.com/gpu: "1"
+  replicas: 1
+  model:
+    uri: hf://ibm-granite/granite-3.0-8b-instruct
+    name: granite-3.0-8b-instruct
 ----
 
-. **Deploy the Model (granite-service.yaml):**
-+
-[source,yaml]
-----
-apiVersion: serving.kserve.io/v1beta1
-kind: InferenceService
-metadata:
-  name: granite-7b
-  namespace: maas-production
-spec:
-  predictor:
-    model:
-      modelFormat:
-        name: vLLM
-      runtime: vllm-runtime
-      storage:
-        key: aws-connection-secret # Assuming you have configured S3 storage
-        path: models/granite-7b-lab
-----
+== Step 2: Map Users to Service Tiers
+
+MaaS uses Kubernetes RBAC to determine which Tiers a user can access. If you see "Tiers" in the UI, you are seeing the default **Free**, **Premium**, and **Enterprise** buckets.
+
+To give a user access to the "Premium" Tier for your model, you must bind them to the appropriate role:
 
 [source,bash]
 ----
-oc apply -f vllm-runtime.yaml
-oc apply -f granite-service.yaml
+# Create a ServiceAccount for our app
+oc create serviceaccount ai-app-bot -n maas-production
+
+# Bind it to the viewer role for the specific model
+oc create rolebinding bot-premium-access \
+  --role=llm-inference-viewer \
+  --serviceaccount=maas-production:ai-app-bot \
+  -n maas-production
 ----
 
-*Checkpoint:* Run `oc get pods` and wait until the `granite-7b-predictor` pod is **Running**.
+== Step 3: Verification (The "Happy Path")
 
-== Step 3: Configure the Front Door (Gateway API)
-
-In RHOAI 3.x, we use the Gateway API to route traffic. This separates the "Infrastructure" from the "Model."
-
-. **Create the HTTPRoute (model-route.yaml):**
-+
-[source,yaml]
-----
-apiVersion: gateway.networking.k8s.io/v1beta1
-kind: HTTPRoute
-metadata:
-  name: granite-route
-  namespace: maas-production
-spec:
-  parentRefs:
-    - name: maas-gateway
-      namespace: istio-system # or where your Gateway is defined
-  hostnames:
-    - "api.maas.example.com"
-  rules:
-    - matches:
-        - path:
-            type: PathPrefix
-            value: /v1/completions
-      backendRefs:
-        - name: granite-7b-predictor
-          port: 8080
-----
-
-[source,bash]
-----
-oc apply -f model-route.yaml
-----
-
-== Step 4: Apply Governance (Kuadrant)
-
-Now, we solve the "Why Buy" challenge. We will apply a policy that limits users to **5 requests every 10 seconds** to prevent abuse.
-
-. **Create the RateLimitPolicy (safety-limit.yaml):**
-+
-[source,yaml]
-----
-apiVersion: kuadrant.io/v1beta2
-kind: RateLimitPolicy
-metadata:
-  name: granite-protection
-  namespace: maas-production
-spec:
-  targetRef:
-    group: gateway.networking.k8s.io
-    kind: HTTPRoute
-    name: granite-route
-  limits:
-    "basic-tier":
-      rates:
-        - limit: 5
-          window: 10s
-----
-
-[source,bash]
-----
-oc apply -f safety-limit.yaml
-----
-
-== Step 5: Verification & Stress Test
-
-Let's prove the factory works and the guards are active.
-
-. **Test 1: A Valid Request (The "Happy Path")**
+1.  **Generate a MaaS Token:** In the **Gen AI Studio -> API Keys** section of the UI, generate a new token for your user.
+2.  **Find the Endpoint:** Go to **Model Endpoints** to retrieve your public URL.
+3.  **Query the Model:**
 +
 [source,bash]
 ----
-curl -X POST "http://api.maas.example.com/v1/completions" \
-     -H "Content-Type: application/json" \
-     -d '{"model": "granite-7b", "prompt": "Define industrialized AI.", "max_tokens": 50}'
-----
-+
-*Result:* You should receive a JSON response with the definition.
+export MAAS_TOKEN="your_generated_token"
+export INFERENCE_URL="https://maas.your-cluster-domain.com"
 
-. **Test 2: The Stress Test (The "Governance Path")**
-+
-Run this loop to simulate a "noisy neighbor" or a runaway script:
-+
-[source,bash]
-----
-for i in {1..20}; do
-  curl -o /dev/null -s -w "%{http_code}\n" -X POST "http://api.maas.example.com/v1/completions" \
-  -H "Content-Type: application/json" \
-  -d '{"model": "granite-7b", "prompt": "spam", "max_tokens": 10}'
-done
+curl -k -X POST "${INFERENCE_URL}/v1/chat/completions" \
+  -H "Authorization: Bearer ${MAAS_TOKEN}" \
+  -d '{
+    "model": "granite-3.0-8b-instruct",
+    "messages": [{"role": "user", "content": "What is MaaS?"}]
+  }'
 ----
 
-*Result:*
-You will see `200` (Success) for the first 5 requests.
-Then, you will see `429` (Too Many Requests) for the rest.
-
-**Congratulations.** You have successfully deployed a MaaS architecture that is:
-1.  **Efficient** (Shared vLLM Runtime).
-2.  **Accessible** (Standard Gateway API).
-3.  **Governed** (Kuadrant Rate Limiting).
-
-[.text-center]
-*You have built the factory. Now, keep it running.* +
-link:troubleshooting.html[**Next: Day-2 Operations & Troubleshooting >**]
-
-```
+[TIP]
+.Observability Note
+====
+If the request fails with a `429`, check the **Service Tiers** tab in the UI. You may have exceeded the "Tokens Per Minute" (TPM) limit for your assigned tier.
+====

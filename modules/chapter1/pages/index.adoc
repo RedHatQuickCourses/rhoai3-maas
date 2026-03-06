@@ -1,75 +1,79 @@
-= Industrializing AI: The Business Case for Models as a Service
+= Industrializing AI: The Business Case for Models as a Service (OpenShift AI 3.3)
 :navtitle: Introduction & Business Value
 :toc: macro
 :role: Executive & Architectural Strategy
 :audience: CTOs, Enterprise Architects, Platform Leads
-:description: Why enterprises are moving from ticket-based AI to industrialized Models as a Service (MaaS) on Red Hat OpenShift AI 3.x to solve ROI, security, and scale challenges.
+:description: Why enterprises are moving from ticket-based AI to industrialized Models as a Service (MaaS) on Red Hat OpenShift AI 3.3 to solve ROI, security, and scale challenges.
+
+[IMPORTANT]
+.Technology Preview Notice
+====
+Models-as-a-Service (MaaS), including RoCE networking and specific hardware accelerators like IBM Spyre on x86, are currently available in Red Hat OpenShift AI 3.3 as **Technology Preview** features. They are not supported with Red Hat production service level agreements (SLAs). This course is designed to help you build a GitOps framework to test this functionality and provide feedback ahead of General Availability (GA).
+
+====
 
 [.lead]
 *Stop treating AI like a science project. Start running it like a factory.*
 
-In the early days of enterprise AI, data scientists were explorers. They requested hardware, downloaded models to their laptops, and ran experiments in isolation.
+In the early days of enterprise AI, data scientists were explorers. They requested hardware, downloaded models to their laptops, and ran experiments in isolation. Today, that model is broken. 
 
-Today, that model is broken.
+As demand for Generative AI explodes, the "ticket-based" workflow has become a severe operational bottleneck. Expensive GPUs sit idle at night while teams fight for capacity during the day. "Shadow AI" proliferates as frustrated developers bypass IT to use public APIs, leaking proprietary data.
 
-As demand for Generative AI explodes, the "ticket-based" workflow—where teams file IT tickets to reserve GPUs—has become a bottleneck. Expensive H100s sit idle at night while teams fight for capacity during the day. "Shadow AI" proliferates as frustrated developers bypass IT to use public APIs, leaking proprietary data.
-
-**Models as a Service (MaaS)** on Red Hat OpenShift AI 3.x is the answer. It is the shift from manual, static deployments to a **centralized, API-first utility** that optimizes cost, enforces security, and guarantees performance.
-
-
+**Models as a Service (MaaS)** in Red Hat OpenShift AI 3.3 is the answer. It is the shift from manual, static deployments to a **centralized, API-first utility**. MaaS enables you to define service tiers with different rate limits and quotas, control access through API key authentication, and track resource consumption for cost allocation.
 
 == The Core Objection: "Why not just use a Public API?"
 
-This is the first question every CTO asks: _"Why build this? Why not just point our developers to OpenAI or Anthropic?"_
+This is the first question every CTO asks: _"Why build this? Why not just point our developers to a public AI provider?"_
 
 Public APIs are excellent for prototyping, but they fail at enterprise scale for three reasons:
 
-. **The Cost Explosion:** Public APIs charge per token. As you scale to thousands of employees and automated agents, costs become unpredictable and linear. MaaS allows you to **cap your costs** by owning the compute.
-. **The Privacy Gap:** Sending sensitive IP, PII, or financial data to a public endpoint violates Zero Trust principles. With MaaS, traffic never leaves your cluster.
-. **The "Noisy Neighbor" Latency:** Public APIs offer no SLA on latency. In a mission-critical app, a 3-second pause is a failure. MaaS gives you predictable **Time-To-First-Token (TTFT)**.
+ . **The Cost Explosion:** Public APIs charge per token. As you scale to thousands of employees and automated agents, costs become unpredictable. MaaS allows you to **cap your costs** by owning the compute and enforcing strict token quotas.
+ . **The Privacy Gap:** Sending sensitive IP, PII, or financial data to a public endpoint violates Zero Trust principles. With MaaS, traffic never leaves your cluster, and access is governed by centralized authentication.
+ . **The "Noisy Neighbor" Latency:** Public APIs offer no SLA on latency. MaaS gives you predictable performance by physically isolating workloads and offering advanced hardware optimization.
 
-== The 3 Pillars of MaaS Value
+== The 3 Pillars of MaaS Value in RHOAI 3.3
 
-Red Hat OpenShift AI 3.x introduces specific features to solve these challenges.
+Red Hat OpenShift AI 3.3 introduces a turn-key governance layer and advanced hardware capabilities to solve these enterprise challenges.
 
-=== 1. Economic Efficiency (The "Idle Iron" Problem)
-* **The Problem:** A single model rarely utilizes 100% of an A100 GPU 100% of the time. If you dedicate one GPU per team, you are paying for idle silicon.
-* **The MaaS Solution:** **Dynamic GPU Slicing & Sharing.**
-Using technologies like **MIG (Multi-Instance GPU)** and the **vLLM** runtime, MaaS allows you to partition a single physical GPU into multiple "slices." You can run 4 distinct small models on one card, or serve 50 different teams from a shared pool, driving your hardware utilization from 20% to 80%.
+=== 1. Economic Efficiency (Solving "Idle Iron")
+* **The Problem:** A single model rarely utilizes 100% of an expensive GPU. Dedicating one GPU per team results in wasted budget.
+* **The 3.3 Solution:** **GPU Time Slicing & RoCE.**
+OpenShift AI 3.3 maximizes hardware ROI through GPU time slicing, which enables multiple workloads to share a single physical GPU by dividing processing time. For massive models requiring multi-node setups, 3.3 introduces RoCE (RDMA over Converged Ethernet) with GPUDirect RDMA, enabling direct memory access between GPUs without CPU involvement for sub-microsecond latency.
 
-=== 2. Governance at the Edge (The "Wild West" Problem)
-* **The Problem:** Once a model is deployed, who is using it? How much? Are they authorized?
-* **The MaaS Solution:** **Token-Aware Rate Limiting.**
-RHOAI 3.x integrates **Kuadrant** and the **Gateway API**. Unlike standard load balancers that only count "requests," Kuadrant counts **tokens**. You can create strict policies (e.g., "The Marketing Team gets 1M tokens/day; Engineering gets 5M"). This prevents a single runaway script from draining your budget or crashing the system.
+=== 2. Turn-Key Governance (Solving the "Wild West")
+* **The Problem:** Managing who has access to which model, and preventing a single runaway script from crashing the system.
+* **The 3.3 Solution:** **Tier-Based Access Control.**
+Through the integration of Kuadrant (Authorino and Limitador), RHOAI 3.3 introduces a strict tier system. Administrators can map OpenShift user groups to Default Tiers (Free, Premium, and Enterprise). These tiers mathematically enforce exact request rate limits and token consumption limits at the network edge.
 
-=== 3. Developer Velocity (The "Friction" Problem)
-* **The Problem:** Developers don't want to learn Kubernetes, KServe, or Pod specs. They just want an endpoint.
-* **The MaaS Solution:** **Standardized APIs.**
-The platform exposes an **OpenAI-compatible schema**. Developers simply change the `base_url` in their code. They don't know (or care) if the model is running on an NVIDIA H100 or an Intel Gaudi accelerator; they just get a response.
+=== 3. The Pathway to Agentic AI
+* **The Problem:** Simple chatbots are no longer sufficient. Enterprises want to deploy autonomous AI agents that can securely interact with internal databases and execute multi-step tasks.
+* **The 3.3 Solution:** **Standardized, Governed APIs.**
+MaaS provides developers with an OpenAI-compatible API. By standardizing communication protocols (like the Model Context Protocol and Llama Stack API) within a governed, rate-limited environment, organizations can safely deploy intelligent autonomous agents without risking runaway compute costs.
+
+== The Operational Divide: Who Does What?
+
+Industrializing AI requires a strict separation of duties, which this course will cover:
+
+* **The Cluster Administrator:** Handles the infrastructure. They enable the MaaS components, configure the Kubernetes Gateway API, and ensure Kuadrant is running.
+* **The OpenShift AI Administrator:** Handles the business logic. They define the Service Tiers, assign user groups, generate API keys, and monitor token consumption for cross-departmental chargebacks.
 
 == Your Learning Journey
 
-This course transforms you from a "Cluster Admin" into an "AI Platform Architect."
+This course uses a **GitOps-First** approach. We will use the 3.3 UI to understand the concepts, but we will deploy the underlying Kubernetes Custom Resources to ensure your AI factory is version-controlled and reproducible.
 
 [cols="1,3", options="header"]
 |===
 | Module | What You Will Learn
 
 | **1. Strategy (The Choice)**
-| Stop guessing. Learn when to use **Dedicated Serving** (for massive, single models) vs. **MaaS/Distributed Serving** (for shared, high-concurrency APIs).
+| Stop guessing. Learn when to use **Standalone Model Serving** vs. **Distributed MaaS** (the `llm-d` engine).
 
 | **2. Taxonomy (The Language)**
-| Master the RHOAI 3.x vocabulary: **vLLM** (The Engine), **Gateway API** (The Router), and **TrustyAI** (The Watchdog).
+| Master the RHOAI 3.3 vocabulary: **llm-d** (The Engine), **Kuadrant** (The Policy Enforcer), and **Service Tiers** (The Business Logic).
 
 | **3. Architecture (The Blueprint)**
-| A deep dive into the stack: How **KEDA** scales based on queue depth and how **Authorino** enforces Zero Trust.
+| A deep dive into the stack: How Kuadrant limits tokens, how the Gateway API routes traffic, and how RoCE networks operate.
 
 | **4. Lab (The Build)**
-| **Hands-on:** You will deploy the OpenShift AI Operator, configure the **Gateway**, deploy a model with **vLLM**, and apply a **Rate Limit Policy** to block abusive traffic.
+| **Hands-on:** You will define Service Tiers, deploy a model with the `llm-d` runtime published as a MaaS endpoint, generate an API key, and test token rate-limiting.
 |===
-
-[.text-center]
-*Ready to build the factory?* +
-link:strategy.html[**Step 1: Choose Your Strategy (Dedicated vs. MaaS) >**]
-
-```

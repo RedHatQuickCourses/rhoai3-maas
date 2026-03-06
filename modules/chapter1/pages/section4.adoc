@@ -1,140 +1,118 @@
-= Day-2 Operations: Keeping the Factory Running
+= Day-2 Operations: Keeping the Factory Running (OpenShift AI 3.3)
 :navtitle: Operations & Troubleshooting
 :toc: macro
 :role: SRE & Platform Operations
 :audience: Site Reliability Engineers, Platform Admins
-:description: How to monitor, debug, and tune the Red Hat OpenShift AI 3.x MaaS stack when things go wrong.
+:description: How to monitor, debug, and tune the Red Hat OpenShift AI 3.3 distributed MaaS stack when things go wrong.
 
 [.lead]
 *Building the factory is Step 1. Keeping it running is the rest of your career.*
 
-In a distributed MaaS environment, a "broken" service isn't just a crashing pod. It could be a misconfigured Gateway route, an aggressive rate limit, or a saturated GPU.
+In an industrialized MaaS environment, a "broken" service is rarely just a crashing pod. Because OpenShift AI 3.3 disaggregates the architecture, an issue could be a misconfigured Gateway route, a strict Connectivity Link (Kuadrant) rate limit, a missing OpenShift group mapping in your Service Tiers, or saturated GPU memory.
 
-This guide covers the critical observability signals and the three most common failure scenarios in the RHOAI 3.x stack.
+This guide covers the critical observability signals and the most common failure scenarios in the RHOAI 3.3 MaaS stack.
 
 == 1. The Dashboard: What to Watch
 
-Before debugging, you need visibility. Do not rely on user complaints.
+Before debugging, you need visibility. Do not rely solely on user complaints. OpenShift AI 3.3 provides out-of-the-box metrics for monitoring the model serving platform.
 
-=== Key Metrics (Prometheus / Console)
+=== Key Metrics (OpenShift Observe / Prometheus)
+You can query these metrics directly in the OpenShift web console under the Developer perspective -> Observe.
 
-[cols="1,2,2", options="header"]
+[cols="1,2", options="header"]
 |===
-| Metric | What it tells you | Alert Threshold
+| Metric | What it tells you 
 
-| **TTFT (Time To First Token)**
-| The latency user perceives. High TTFT means the system is queuing requests or the GPU is overloaded.
-| > 200ms (for interactive chat)
+| **Number of Requests**
+| Evaluated via `sum(increase(vllm:request_success_total{...}))`. Tracks the throughput of the factory. Sudden drops indicate upstream issues or model crashes.
 
-| **Token Generation Rate**
-| The throughput of the factory. Sudden drops indicate upstream issues or model crashes.
-| < 10 tokens/sec (per stream)
+| **Average Response Time (ms)**
+| The latency the user perceives. High times mean the `llm-d` system is queuing requests or the GPUs are overloaded.
 
-| **Gateway 4xx/5xx Rate**
-| **429:** Kuadrant is blocking traffic (Good/Policy). +
-**404:** Route misconfiguration (Bad). +
-**503:** vLLM backend is down or scaling from zero (Bad).
-| > 1% (excluding valid 429s)
-
-| **GPU Memory Utilization**
-| How full the KV Cache is. If this hits 100%, vLLM may swap to CPU or reject requests.
-| > 95% sustained
+| **GPU Cache Usage over Time**
+| Available in the NIM Metrics tab (if using NVIDIA NIMs) or via Prometheus. How full the KV Cache is. If this hits 100%, requests will be rejected or severely delayed.
 |===
 
-== 2. Troubleshooting Scenario A: "The Broken Door" (404 Not Found)
-
-**Symptom:** You `curl` the endpoint and get `404 Not Found`.
-**The Component:** Gateway API.
-
-In RHOAI 3.x, the Service Mesh/Gateway is strict. A 404 usually means the **HTTPRoute** is not correctly attached to the **Gateway**.
-
-* **Diagnosis:**
-[source,bash]
-----
-# 1. Check if the HTTPRoute is accepted
-oc describe httproute granite-route -n maas-production
-----
-* **Look for:** `Conditions: Accepted = False`.
-* **Common Fixes:**
-** **Hostname Mismatch:** Does the `curl` header (`-H "Host: api.maas.example.com"`) match the `hostnames` in the YAML exactly?
-** **Gateway Namespace:** Did you reference the Gateway in the `istio-system` (or correct) namespace?
-** **Port Mismatch:** Does the `backendRef` point to port `8080` (vLLM default)?
-
-== 3. Troubleshooting Scenario B: "The Stop Sign" (429 Too Many Requests)
-
-**Symptom:** Users report their requests are being rejected.
-**The Component:** Kuadrant (Rate Limiting).
-
-This is usually "working as designed," but you need to verify *why*.
-
-* **Diagnosis:**
-[source,bash]
-----
-# 1. Check the RateLimitPolicy status
-oc describe ratelimitpolicy granite-protection -n maas-production
-----
-* **Check the Headers:** Run `curl -v`. Kuadrant injects headers telling you the limit.
-** `x-ratelimit-remaining: 0`
-** `x-ratelimit-reset: 5`
-* **Fix:**
-** If legitimate traffic is blocked, edit the `RateLimitPolicy` YAML to increase the `limits` bucket.
-** **Pro Tip:** In RHOAI 3.x, ensure you are counting **Tokens**, not just Requests, if you configured specific descriptors.
-
-== 4. Troubleshooting Scenario C: "The Silent Queue" (High Latency / Pending Pods)
-
-**Symptom:** Requests succeed (200 OK) but take 10+ seconds to start (High TTFT).
-**The Component:** KEDA & vLLM.
-
-This means the "Queue" is full, and KEDA isn't scaling fast enough.
-
-* **Diagnosis:**
-[source,bash]
-----
-# 1. Check the HorizontalPodAutoscaler (HPA) generated by KEDA
-oc get hpa -n maas-production
-----
-* **Look for:** `TARGETs` showing `10/1` (Current/Target). If the current value is high, KEDA is trying to scale.
-* **Why isn't it scaling?**
-[source,bash]
-----
-oc get pods -n maas-production
-# Status: Pending?
-----
-* **Root Cause:** **GPU Starvation.** You have hit the physical limits of your cluster. HPA wants 5 pods, but you only have GPUs for 2.
-* **Fix:**
-** **Short Term:** Reduce `minReplicas` or `maxReplicas`.
-** **Long Term:** Purchase more nodes or enable **MIG (Multi-Instance GPU)** to slice existing cards into smaller units.
-
-== 5. Tuning vLLM for Performance
-
-If your architecture is correct but the model is just *slow*, tune the engine.
-
-[source,yaml]
-----
-# Inside your ServingRuntime YAML
-args:
-  - "--gpu-memory-utilization=0.95" # Increase KV Cache space
-  - "--max-model-len=4096"          # Cap context to save memory
-  - "--enforce-eager"               # Use for debugging CUDA graph issues
-----
-
-[TIP]
-.The "OOM" Trap
+[NOTE]
+.The Cold Start Trap
 ====
-If vLLM crashes with `OOMKilled`, it is not usually the *model weights*; it is the **KV Cache** growing too large during long conversations. Decrease `--gpu-memory-utilization` to reserve a buffer for overhead.
+Certain vLLM metrics are available only *after* an inference request is processed by a deployed model. To generate and view these metrics, you must first make an inference request to the model.
 ====
+
+== 2. Troubleshooting Scenario A: The Locked Door (401 / 403 Errors)
+
+In 3.3, MaaS is strictly governed by Red Hat Connectivity Link (Authorino). If a user cannot access a model, it is usually a governance failure, not an infrastructure failure.
+
+=== 401 Unauthorized
+**Symptom:** User receives an `Invalid or expired token` error.
+
+ * **Cause:** The user is likely passing a standard Kubernetes ServiceAccount token instead of a MaaS-generated token.
+ 
+* **Fix:** Users must generate a MaaS-specific token from the dashboard. Alternatively, if passing a JWT programmatically, ensure the format is exactly `Authorization: Bearer <token>`.
+
+=== 403 Forbidden
+**Symptom:** User receives `Access denied. Your tier does not have permission to access this model.`.
+
+  * **Cause:** The model exists, but Kubernetes RBAC RoleBindings are missing, or the user's OpenShift group is not mapped to the authorized Tier.
+ * **Diagnosis:**
++
+[source,bash]
+----
+# 1. Check if the RoleBinding exists for the user's tier:
+oc get rolebindings -n <your-project-namespace> | grep <your-model-name> 
+
+# 2. Verify how the MaaS API is resolving the user's tier based on their group:
+oc exec -n redhat-ods-applications deployment/maas-api -- curl -s http://localhost:8080/v1/tiers/lookup -H "Content-Type: application/json" -d '{"groups": ["<user-group-name>"]}' 
+----
+
+== 3. Troubleshooting Scenario B: The Stop Sign (429 Too Many Requests)
+
+**Symptom:** Users report their requests are being rejected with a `429` status code and a `Token quota exceeded` or `Rate limit exceeded` message.
+**The Component:** Kuadrant (Limitador).
+
+This means the governance factory is working as designed. However, you need to verify why it is triggering.
+
+* **Check the Headers:** Inspect the HTTP response headers. Limitador injects data to tell the client exactly what happened:
+** `X-RateLimit-Limit`
+** `X-RateLimit-Remaining`
+** `Retry-After` 
+* **Fix / Mitigation:**
+** If legitimate traffic is being blocked, the OpenShift AI Administrator needs to edit the Tier settings in the UI to increase the Token Consumption Limits or Request Rate Limits.
+** If the user is sharing a token across multiple applications, advise them to use separate API keys, as limits apply to the aggregate usage.
+
+== 4. Troubleshooting Scenario C: The Ghost UI (MaaS Tab Missing)
+
+**Symptom:** The Models-as-a-Service tab does not appear in the OpenShift AI dashboard under AI Asset Endpoints.
+**The Component:** DataScienceCluster & OdhDashboardConfig.
+
+* **Diagnosis & Fix:**
++
+[source,bash]
+----
+# 1. Verify the MaaS API backend component is actually running:
+oc get pods -n redhat-ods-applications -l app=maas-api 
+# 2. Check if the Dashboard feature flag is enabled:
+oc get odhdashboardconfig odh-dashboard-config -n redhat-ods-applications -o yaml | grep modelAsService 
+----
+* Ensure that the `spec.dashboardConfig.modelAsService` is set to `true`. If it was recently changed, you may need to hard refresh your browser or wait for the dashboard pods to reload.
+
+== 5. Troubleshooting Scenario D: The Silent Queue (High Latency / Pending Pods)
+
+**Symptom:** Requests succeed (200 OK) but take a long time, or inference pods stay in a `Pending` state.
+**The Component:** `llm-d`, vLLM, and Hardware.
+
+* **Cause 1: GPU Starvation.** If the pod requests `nvidia.com/gpu: 1` but no node can satisfy it, the pod will pend. Check the cluster queue configuration to ensure requested resources do not exceed available quotas.
+* **Cause 2: Image Pull Timeouts.** In 3.3, if your `llm-d` or vLLM container image is exceptionally large, the scheduler (Kueue) might terminate the pod before it finishes pulling. By default, Kueue waits 5 minutes. 
+* **Fix:** Verify hardware availability (`oc get nodes -l nvidia.com/gpu.present=true` ), or configure the deployment strategy to `Recreate` instead of `Rolling update` if you are operating in a resource-constrained environment to prevent double-allocation of GPUs during rollouts.
 
 == Conclusion: You Are Ready
 
-You have completed the **Red Hat OpenShift AI 3.x MaaS Learning Journey**.
+You have completed the **Red Hat OpenShift AI 3.3 Models-as-a-Service Learning Journey**.
 
-* You understand the **Strategy** (MaaS vs. Dedicated).
-* You speak the **Taxonomy** (vLLM, Gateway, Kuadrant).
-* You have **Built the Factory** (Lab).
-* You can **Fix the Machinery** (Troubleshooting).
+* You understand the **Strategy** (Standalone vs. Distributed `llm-d`).
+* You speak the **Taxonomy** (Kuadrant, RoCE, Tiers).
+* You have **Built the Factory** (GitOps Lab).
+* You can **Fix the Machinery** (Day-2 Operations).
 
 **Next Steps:**
-Go to the **Red Hat Hybrid Cloud Console** and start your pilot.
-
-[.text-center]
-**[End of Course]**
+Go to the **Red Hat Hybrid Cloud Console** and start your pilot deployment.
