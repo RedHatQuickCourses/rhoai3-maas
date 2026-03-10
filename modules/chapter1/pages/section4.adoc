@@ -1,118 +1,85 @@
-= Day-2 Operations: Keeping the Factory Running (OpenShift AI 3.3)
-:navtitle: Operations & Troubleshooting
+= Governing the AI Factory: The AI Administrator Lab (OpenShift AI 3.3)
+:navtitle: The AI Administrator Lab
 :toc: macro
-:role: SRE & Platform Operations
-:audience: Site Reliability Engineers, Platform Admins
-:description: How to monitor, debug, and tune the Red Hat OpenShift AI 3.3 distributed MaaS stack when things go wrong.
+:role: AI Administrator & MLOps Lead
+:audience: Solution Architects, Delivery Leads, Platform Builders
+:description: How to use the OpenShift AI 3.3 Gen AI Studio to configure Service Tiers, deploy models as MaaS endpoints, and generate API keys for enterprise consumers.
 
 [.lead]
-*Building the factory is Step 1. Keeping it running is the rest of your career.*
+*The Platform Engineers have finished building the factory. The Gateway is open, Kueue is managing the GPUs, and Kuadrant is standing by. Now, it's time to run the business.*
 
-In an industrialized MaaS environment, a "broken" service is rarely just a crashing pod. Because OpenShift AI 3.3 disaggregates the architecture, an issue could be a misconfigured Gateway route, a strict Connectivity Link (Kuadrant) rate limit, a missing OpenShift group mapping in your Service Tiers, or saturated GPU memory.
+In this module, we are changing personas. You are no longer writing YAML; you are the customer's AI Administrator. Your job is to take the raw infrastructure and turn it into a governed, rate-limited "Models as a Service" product for your internal developers.
 
-This guide covers the critical observability signals and the most common failure scenarios in the RHOAI 3.3 MaaS stack.
+We are going to use the new **Gen AI Studio** dashboard to define our service tiers, deploy a model, and generate our first API token.
 
-== 1. The Dashboard: What to Watch
 
-Before debugging, you need visibility. Do not rely solely on user complaints. OpenShift AI 3.3 provides out-of-the-box metrics for monitoring the model serving platform.
 
-=== Key Metrics (OpenShift Observe / Prometheus)
-You can query these metrics directly in the OpenShift web console under the Developer perspective -> Observe.
+== Step 1: Defining the Service Tiers
 
-[cols="1,2", options="header"]
-|===
-| Metric | What it tells you 
+MaaS assigns users to service tiers based on their OpenShift group membership. Tiers are the heart of your ROI strategy—they prevent a single rogue script from exhausting the company's GPU budget by enforcing strict token and request limits.
 
-| **Number of Requests**
-| Evaluated via `sum(increase(vllm:request_success_total{...}))`. Tracks the throughput of the factory. Sudden drops indicate upstream issues or model crashes.
+OpenShift AI 3.3 includes three default tiers: Free, Premium, and Enterprise. Let's configure the Premium tier for our developers.
 
-| **Average Response Time (ms)**
-| The latency the user perceives. High times mean the `llm-d` system is queuing requests or the GPUs are overloaded.
+1. Log in to the OpenShift AI dashboard as an administrator.
+2. In the left navigation menu, click **Settings** -> **Tiers**.
+3. Click the **Premium** tier, then click **Edit tier**.
+4. **Name & Level:** Leave the name as Premium. The priority **Level** determines who wins if a user is in multiple groups. (e.g., Level 2 overrides Level 1).
+5. **Groups:** Select the OpenShift group that contains your developers (e.g., `data-science-users` or `premium-api-users`).
+6. **Configure the Rate Limits:** This is where the magic happens.
+   * Select **Enforce token rate limit** and set it to **10,000 tokens per 1 minute**.
+   * Select **Enforce request rate limit** and set it to **100 requests per 1 minute**.
+7. Click **Update tier**.
 
-| **GPU Cache Usage over Time**
-| Available in the NIM Metrics tab (if using NVIDIA NIMs) or via Prometheus. How full the KV Cache is. If this hits 100%, requests will be rejected or severely delayed.
-|===
 
-[NOTE]
-.The Cold Start Trap
-====
-Certain vLLM metrics are available only *after* an inference request is processed by a deployed model. To generate and view these metrics, you must first make an inference request to the model.
-====
 
-== 2. Troubleshooting Scenario A: The Locked Door (401 / 403 Errors)
+*The Pitch:* Remind your customers that Kuadrant is enforcing these limits at the network edge. If a developer exceeds 10,000 tokens, the request is dropped *before* it hits the GPU, saving massive amounts of compute.
 
-In 3.3, MaaS is strictly governed by Red Hat Connectivity Link (Authorino). If a user cannot access a model, it is usually a governance failure, not an infrastructure failure.
+== Step 2: Deploying the Model (The Visual Way)
 
-=== 401 Unauthorized
-**Symptom:** User receives an `Invalid or expired token` error.
+In Module 3, we deployed a model using YAML. Now, let's see how the AI Administrator does it through the UI to publish a model to the catalog.
 
- * **Cause:** The user is likely passing a standard Kubernetes ServiceAccount token instead of a MaaS-generated token.
- 
-* **Fix:** Users must generate a MaaS-specific token from the dashboard. Alternatively, if passing a JWT programmatically, ensure the format is exactly `Authorization: Bearer <token>`.
+1. In the left navigation menu, click **Projects** and select your target project (e.g., `maas-production`).
+2. Click the **Deployments** tab, then click **Deploy model**.
+3. **Model Details:** * Select **Generative AI model** as the Model type.
+   * Specify your model location (e.g., an S3 bucket containing `granite-3.0-8b-instruct`). Click Next.
+4. **Model Deployment:**
+   * Enter a unique deployment name (e.g., `granite-premium`).
+   * Select **Distributed inference with llm-d** as the serving runtime.
+   * Select the appropriate hardware profile (e.g., 1 NVIDIA GPU). Click Next.
+5. **Advanced Settings (The MaaS Integration):**
+   * Select the **Publish as MaaS endpoint** checkbox. _(This is the button that tells Kuadrant to protect the route!)_
+   * Under Tier access, select **Specific tiers** and choose **Premium**. 
+6. Click **Deploy**.
 
-=== 403 Forbidden
-**Symptom:** User receives `Access denied. Your tier does not have permission to access this model.`.
+== Step 3: Generating Tokens and Testing the Factory
 
-  * **Cause:** The model exists, but Kubernetes RBAC RoleBindings are missing, or the user's OpenShift group is not mapped to the authorized Tier.
- * **Diagnosis:**
-+
+Once the model status displays a green checkmark, the factory is live. The developer can now log in, get their keys, and start building applications.
+
+1. In the left navigation menu, go to **Gen AI Studio** -> **AI asset endpoints** -> **Models as a service**.
+2. Locate your deployed model. You will see a "MaaS" badge next to its name. Click **View** in the Inference endpoint column.
+3. Click **Generate API Key**. 
+4. Securely copy the token. *(Note: This token is a JSON Web Token (JWT) tied specifically to the user and their assigned tier).*
+
+=== The Developer Experience
+Your internal developers can now query the governed endpoint just like they would query OpenAI, but with total data sovereignty.
+
 [source,bash]
 ----
-# 1. Check if the RoleBinding exists for the user's tier:
-oc get rolebindings -n <your-project-namespace> | grep <your-model-name> 
+export MAAS_TOKEN="<your_generated_token>"
+export INFERENCE_URL="https://maas.<your-cluster-domain>"
 
-# 2. Verify how the MaaS API is resolving the user's tier based on their group:
-oc exec -n redhat-ods-applications deployment/maas-api -- curl -s http://localhost:8080/v1/tiers/lookup -H "Content-Type: application/json" -d '{"groups": ["<user-group-name>"]}' 
+curl -k -X POST "${INFERENCE_URL}/llm/granite-premium/v1/chat/completions" \
+  -H "Authorization: Bearer ${MAAS_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "granite-premium",
+    "messages": [{"role": "user", "content": "Write a python script to parse JSON."}],
+    "max_tokens": 500
+  }'
 ----
 
-== 3. Troubleshooting Scenario B: The Stop Sign (429 Too Many Requests)
+== Next Steps: Day-2 Operations
 
-**Symptom:** Users report their requests are being rejected with a `429` status code and a `Token quota exceeded` or `Rate limit exceeded` message.
-**The Component:** Kuadrant (Limitador).
+The platform is built, the tiers are set, and the tokens are flowing. But what happens when a developer calls you complaining about a `429 Too Many Requests` error, or a pod gets stuck in a `Pending` state?
 
-This means the governance factory is working as designed. However, you need to verify why it is triggering.
-
-* **Check the Headers:** Inspect the HTTP response headers. Limitador injects data to tell the client exactly what happened:
-** `X-RateLimit-Limit`
-** `X-RateLimit-Remaining`
-** `Retry-After` 
-* **Fix / Mitigation:**
-** If legitimate traffic is being blocked, the OpenShift AI Administrator needs to edit the Tier settings in the UI to increase the Token Consumption Limits or Request Rate Limits.
-** If the user is sharing a token across multiple applications, advise them to use separate API keys, as limits apply to the aggregate usage.
-
-== 4. Troubleshooting Scenario C: The Ghost UI (MaaS Tab Missing)
-
-**Symptom:** The Models-as-a-Service tab does not appear in the OpenShift AI dashboard under AI Asset Endpoints.
-**The Component:** DataScienceCluster & OdhDashboardConfig.
-
-* **Diagnosis & Fix:**
-+
-[source,bash]
-----
-# 1. Verify the MaaS API backend component is actually running:
-oc get pods -n redhat-ods-applications -l app=maas-api 
-# 2. Check if the Dashboard feature flag is enabled:
-oc get odhdashboardconfig odh-dashboard-config -n redhat-ods-applications -o yaml | grep modelAsService 
-----
-* Ensure that the `spec.dashboardConfig.modelAsService` is set to `true`. If it was recently changed, you may need to hard refresh your browser or wait for the dashboard pods to reload.
-
-== 5. Troubleshooting Scenario D: The Silent Queue (High Latency / Pending Pods)
-
-**Symptom:** Requests succeed (200 OK) but take a long time, or inference pods stay in a `Pending` state.
-**The Component:** `llm-d`, vLLM, and Hardware.
-
-* **Cause 1: GPU Starvation.** If the pod requests `nvidia.com/gpu: 1` but no node can satisfy it, the pod will pend. Check the cluster queue configuration to ensure requested resources do not exceed available quotas.
-* **Cause 2: Image Pull Timeouts.** In 3.3, if your `llm-d` or vLLM container image is exceptionally large, the scheduler (Kueue) might terminate the pod before it finishes pulling. By default, Kueue waits 5 minutes. 
-* **Fix:** Verify hardware availability (`oc get nodes -l nvidia.com/gpu.present=true` ), or configure the deployment strategy to `Recreate` instead of `Rolling update` if you are operating in a resource-constrained environment to prevent double-allocation of GPUs during rollouts.
-
-== Conclusion: You Are Ready
-
-You have completed the **Red Hat OpenShift AI 3.3 Models-as-a-Service Learning Journey**.
-
-* You understand the **Strategy** (Standalone vs. Distributed `llm-d`).
-* You speak the **Taxonomy** (Kuadrant, RoCE, Tiers).
-* You have **Built the Factory** (GitOps Lab).
-* You can **Fix the Machinery** (Day-2 Operations).
-
-**Next Steps:**
-Go to the **Red Hat Hybrid Cloud Console** and start your pilot deployment.
+In the final module, we will put on our Site Reliability Engineer (SRE) hats and look at Day-2 Operations and Troubleshooting to keep the factory running smoothly.

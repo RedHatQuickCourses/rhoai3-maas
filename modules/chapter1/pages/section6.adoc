@@ -1,0 +1,57 @@
+= Building Models-as-a-Service: Lessons from the Trenches
+:toc: macro
+:description: A retrospective on our experience building a Models-as-a-Service (MaaS) architecture in OpenShift AI 3.3 using a GitOps approach, and how it shapes our curriculum design.
+
+When we set out to build our Models-as-a-Service (MaaS) deployment using a GitOps approach, we expected a straightforward path: deploy an AI model, expose it, and manage access. Instead, we hit several roadblocks that forced us to look under the hood. 
+
+What we discovered fundamentally changed how we view the platform. This document summarizes our experience, the architectural realities of MaaS, and how we are restructuring our learning curriculum to better prepare our teams.
+
+toc::[]
+
+== 1. Summary of Our Setup Experience: The "Hard Lessons"
+
+Our primary takeaway from building this solution is that OpenShift AI 3.3 MaaS using the Distributed Inference Server (`llm-d`) is **not a standalone application; it is an ecosystem.** Initially, we treated MaaS as a simple toggle in the Gen AI Studio UI. However, we quickly learned that the platform uses a strict, "fail-safe" orchestration model. If the foundational layers—network routing, security policies, and resource scheduling—are not perfectly in place, the core OpenShift AI Operator will silently refuse to build the MaaS API or deploy the model. 
+
+We spent hours chasing missing ConfigMaps (like `maas-parameters`) and stalled Pods, only to realize the root causes were missing prerequisite operators higher up the dependency chain. We learned that the highest barrier to entry for MaaS is not using the UI, but preparing the cluster foundation.
+
+
+
+== 2. The MaaS Component Stack: The "Invisible Dependency Chain"
+
+To make MaaS work in a scalable, GitOps-driven environment, we essentially had to build a stack of five distinct technologies. Here is how they relate to one another and why each is critical to the mission:
+
+* **The Network Front Door: Kubernetes Gateway API**
+** *Purpose:* Routes external HTTP/REST traffic into the cluster using standard Gateway API resources.
+** *Relationship:* The OpenShift AI Operator looks for a specific Gateway (`maas-default-gateway`). If it doesn't exist, it halts the MaaS API deployment to prevent unroutable services.
+
+* **The Governance Engine: Red Hat Connectivity Link (Kuadrant)**
+** *Purpose:* Provides the API key authentication (Authorino) and rate-limiting (Limitador) necessary to protect expensive GPU resources from abuse.
+** *Relationship:* The RHOAI Operator refuses to generate the `maas-parameters` configuration if Kuadrant is missing. It acts as a fail-safe to prevent insecure models from being exposed.
+
+
+
+* **The Resource Bank: Kueue Operator**
+** *Purpose:* Manages quotas and queues for distributed workloads, ensuring fair sharing of GPU and CPU resources across namespaces.
+** *Relationship:* The `llm-d` runtime must ask Kueue for permission to use a GPU via a `ClusterQueue` and `LocalQueue`. If Kueue isn't configured, the deployment is rejected immediately with scheduling errors.
+
+* **The Pod Orchestrator: LeaderWorkerSet (LWS) Operator**
+** *Purpose:* Groups pods into a "Leader" (handling API routing) and "Workers" (handling the GPU execution math).
+** *Relationship:* KServe requires LWS to deploy the `llm-d` runtime. Even on a single-node cluster, KServe will fail with a `ReconcileMultiNodeWorkloadError` if the LWS CRDs are missing.
+
+* **The Execution Engine: KServe & llm-d**
+** *Purpose:* The actual inference server that loads the model into vLLM and serves the tokens.
+** *Relationship:* This sits at the very top of the stack. It relies entirely on the Gateway for traffic, Kuadrant for security, Kueue for GPUs, and LWS for pod management.
+
+== 3. Strategic Shift in Our Curriculum Design
+
+Because our GitOps journey uncovered this strict dependency chain, we realized our original course design assumed a "happy path" where the cluster was magically prepared for the learner. If we published the course as originally drafted, our learners would hit the exact same `ConfigMap missing` roadblocks we did.
+
+To prevent this, we are adjusting our course structure to explicitly teach the Dependency Chain. We will split the deployment module into two distinct parts:
+
+=== Module 3: Day 0 - The MaaS Foundation (Platform Engineers)
+* **Focus:** Installing the prerequisite stack. We will explicitly walk the learner through installing Kuadrant, LWS, Kueue, and creating the Gateway. We are positioning this as "Building the AI Factory."
+
+=== Module 4: Day 1 - Deploying the Model (AI Developers)
+* **Focus:** Consuming the platform via the Gen AI Studio UI. Because Module 3 built a rock-solid foundation, the learner will experience the "magic" of deploying `llm-d`, assigning service tiers, and generating tokens without a single failure.
+
+By restructuring the course this way, we transform a frustrating troubleshooting experience into a deliberate, empowering lesson on enterprise AI architecture.

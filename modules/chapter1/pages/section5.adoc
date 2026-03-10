@@ -1,27 +1,85 @@
-== Quick Reference: 3.3 MaaS Commands
+= Day-2 Operations: Keeping the Factory Running (OpenShift AI 3.3)
+:navtitle: Operations & Troubleshooting
+:toc: macro
+:role: SRE & Platform Operations
+:audience: Solution Architects, Delivery Leads, Platform Builders
+:description: How to equip customer operations teams to monitor, debug, and tune the Red Hat OpenShift AI 3.3 Models-as-a-Service stack when things go wrong.
 
-Keep these CLI commands handy when investigating the MaaS stack.
+[.lead]
+*As a Solution Architect or Consultant, your job isn't done when the deployment turns green. You have to teach the customer how to keep the factory running.*
+
+In an industrialized Models-as-a-Service (MaaS) environment, a "broken" service is rarely just a crashing pod. Because OpenShift AI 3.3 disaggregates the architecture to maximize ROI, an issue could be a misconfigured Gateway route, a strict Connectivity Link (Kuadrant) rate limit, a missing OpenShift group mapping, or saturated GPU memory.
+
+This guide covers the critical observability signals and the most common failure scenarios you need to train customer Site Reliability Engineers (SREs) to handle.
+
+
+
+== 1. The Dashboard: What to Watch (Observability)
+
+Before debugging, the customer's operations team needs visibility. Do not let them rely solely on developer complaints. OpenShift AI 3.3 provides out-of-the-box metrics for monitoring the model serving platform.
+
+Show the customer how to query these metrics directly in the OpenShift web console under **Observe -> Metrics**.
 
 [cols="1,2", options="header"]
 |===
-| Goal | Command
+| Metric | What it tells the SRE 
 
-| **List MaaS deployments**
-| `oc get llminferenceservice -n <namespace>`
+| **Number of Requests**
+| Evaluated via `sum(increase(vllm:request_success_total{...}))`. Tracks the overall throughput of the factory. Sudden drops indicate upstream network/Gateway issues or model crashes.
 
-| **Check Tier Mappings**
-| `oc get configmap tier-to-group-mapping -n redhat-ods-applications -o yaml`
+| **Average Response Time**
+| Evaluated via `histogram_quantile(0.95, sum(rate(vllm:request_duration_seconds_bucket{...}))`. If the 95th percentile response time spikes, the `llm-d` workers are being saturated. It is time to add more GPU replicas to the tier.
 
-| **Verify MaaS API Health**
-| `oc get pods -n redhat-ods-applications -l app=maas-api`
-
-| **Test Token Auth (CLI)**
-| `curl -I -H "Authorization: Bearer $MAAS_TOKEN" https://maas.<domain>/v1/models`
-
-| **Check GPU Availability**
-| `oc get nodes -l nvidia.com/gpu.present=true`
-
-| **Verify RoCE Network**
-| `oc get networkattachmentdefinitions -n <namespace>`
+| **Token Generation Rate**
+| Evaluated via `sum(rate(vllm:prompt_tokens_total{...}))`. This is the core "business metric." It proves to leadership how much the factory is actually producing and is vital for chargeback models.
 |===
 
+== 2. Troubleshooting Scenario A: The "401 Unauthorized" Wall
+
+**Symptom:** A developer's script receives a `401 Unauthorized` HTTP error when calling the MaaS endpoint.
+**The Component:** Kuadrant (Authorino) & The Gateway.
+
+* **Cause 1: Missing or Malformed Token.** The developer forgot to include the `Authorization: Bearer <token>` header, or the token expired.
+* **Cause 2: Broken Trust.** Authorino cannot validate the token signature against the OpenShift AI backend. 
+* **The Fix:** Have the user generate a fresh token in the Gen AI Studio. If the issue persists across all users, check the Authorino pods in the `kuadrant-system` namespace. If they are restarting, the governance engine is failing open/closed depending on the Gateway policy.
+
+== 3. Troubleshooting Scenario B: The "403 Forbidden" Trap
+
+**Symptom:** The developer has a valid token (no 401), but receives a `403 Forbidden` error.
+**The Component:** Service Tiers & RBAC.
+
+* **Cause:** The user's token is valid, but they belong to an OpenShift group that has **not** been mapped to a Service Tier in the MaaS settings, OR the model they are trying to access was published only to a specific tier (e.g., Premium) and they are in the Free tier.
+* **The Fix:** Go to **Settings -> Tiers** in the Gen AI Studio. Verify the user's group is listed under a tier. Then, check the Model Deployment settings to ensure that tier has permission to view the model.
+
+== 4. Troubleshooting Scenario C: The "429 Too Many Requests" (Working as Intended)
+
+**Symptom:** The developer's script suddenly fails with a `429 Too Many Requests` error.
+**The Component:** Kuadrant (Limitador).
+
+* **Cause:** *This is not a bug; it is a feature.* The developer has exhausted their token or request limit for their assigned Service Tier. Limitador is actively protecting the GPUs.
+* **The Fix:** This is an application architecture issue, not an infrastructure issue. Teach the developer to look for the `Retry-After` HTTP header in the 429 response and implement exponential backoff in their code. If they consistently hit the limit, the business needs to upgrade their OpenShift group to a higher Service Tier.
+
+== 5. Troubleshooting Scenario D: The Silent Queue (Pending Pods & Kueue Alerts)
+
+**Symptom:** A new model deployment stays in a `Pending` state indefinitely, or scale-out replicas refuse to schedule.
+**The Component:** Kueue Operator & Hardware.
+
+When `llm-d` asks for a GPU, the Kueue operator acts as the bank. If the bank is empty, the pod pends. You must train customer SREs to monitor specific **Kueue Alerting Rules** in the OpenShift Observe dashboard:
+
+* **Alert: `PendingWorkloadPods`** ** *Meaning:* The pod is asking for resources (e.g., `nvidia.com/gpu: 1`), but the `ClusterQueue` quota is exhausted.
+** *The Fix:* Check `oc get clusterqueue`. If the quota is maxed out, the customer either needs to buy more physical GPUs, or adjust their time-slicing policies to share existing GPUs more aggressively.
+* **Alert: `KueuePodDown` or Image Pull Timeouts**
+** *Meaning:* In 3.3, if your `llm-d` container image is exceptionally large (e.g., pulling a massive 70B model directly into the pod), Kueue might terminate the pod before it finishes pulling. By default, Kueue only waits 5 minutes before failing the workload.
+** *The Fix:* Pre-fetch the model to a PVC, or adjust the Kueue configuration timeouts for that specific `LocalQueue`.
+
+== Conclusion: You Are Ready to Enable the Customer
+
+You have completed the **Red Hat OpenShift AI 3.3 Models-as-a-Service Enablement Journey**.
+
+* You can pitch the **Business Value & Strategy** (The Race Car vs. The City Transit).
+* You understand the **Invisible Dependency Chain** (Gateway, Kuadrant, Kueue, LWS).
+* You can **Build the Factory** via GitOps (The Platform Engineer Track).
+* You can **Govern the Business** via the Gen AI Studio (The AI Admin Track).
+* You can **Equip the SREs** to maintain the system (Day-2 Operations).
+
+You now have the tools and the narrative to help our enterprise customers stop treating AI like a science project, and start running it like an industrialized factory. Go build.

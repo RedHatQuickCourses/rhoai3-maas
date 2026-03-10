@@ -1,84 +1,44 @@
-= Strategy & Taxonomy: Defining Your Path to Production (OpenShift AI 3.3)
-:navtitle: Strategy & Taxonomy
+= Strategy: Defining Your Path to Production (OpenShift AI 3.3)
+:navtitle: Strategy
 :toc: macro
-:role: Architect & Technical Lead
-:audience: Cloud Architects, ML Engineers, Platform Engineers
-:description: Define the strategic deployment models in Red Hat OpenShift AI 3.3, understand the GitOps approach to MaaS, and master the new vocabulary (llm-d, RoCE, Kuadrant).
+:role: Enterprise Architect & Platform Lead
+:audience: Solution Architects, Delivery Leads, Platform Builders
+:description: Define the strategic deployment models in Red Hat OpenShift AI 3.3 and understand when to pitch Standalone Model Serving versus Distributed Models as a Service (MaaS).
 
 [.lead]
-Before you write a single line of YAML or commit to your Git repository, you must choose your architectural strategy.
+*Before we write a single line of YAML or commit to a Git repository, we have to help the customer choose their architectural strategy.*
 
-In Red Hat OpenShift AI 3.3, "model serving" has split into two very specific, mechanically different paths. Choosing the wrong path leads to either wasted infrastructure spend or an inability to apply governance. 
+In Red Hat OpenShift AI 3.3, "model serving" has split into two very specific, mechanically different paths. Choosing the wrong path leads to either wasted infrastructure spend or an inability to apply governance.
 
-Furthermore, while 3.3 introduces a powerful new UI for managing these features, our approach is **GitOps-First**. We use the UI to understand the business logic, but we deploy the underlying Kubernetes Custom Resources (CRs) to ensure our AI factory is version-controlled, reproducible, and scalable.
+Our job is to guide the customer. We need to look at their use cases and explain why not every AI workload should be deployed the same way.
 
 == The Strategic Divide: Standalone vs. Distributed MaaS
 
-Not every AI workload is the same. Serving a massive, fine-tuned model for a single, high-frequency trading application requires a different architecture than providing a general-purpose, rate-limited LLM API to 500 enterprise developers.
+Not every AI workload is the same. Serving a massive, fine-tuned model for a single, high-frequency internal application requires a different architecture than providing a general-purpose, rate-limited LLM API to 500 enterprise developers across different departments.
 
-[cols="1,3,3", options="header"]
-|===
-| Feature | Path A: Standalone Serving (The "Specialist") | Path B: Distributed MaaS (The "Utility")
+When positioning OpenShift AI to leadership, think of it like transportation:
 
-| **Analogy**
-| A private race car. Optimized for one driver and maximum speed on a specific track.
-| A city transit system. Optimized for reliability, sharing resources efficiently among many riders, and metered usage.
+ * **Standalone Serving** is a **Race Car**. It is purpose-built, highly tuned for a single driver (application), and consumes dedicated resources. It's incredibly fast, but it doesn't scale to handle the general public.
+ * **Models as a Service (MaaS)** is **City Transit**. It is designed for high throughput, shared resources, and access control (tickets/tokens). It efficiently moves hundreds of people (developers) using the same infrastructure footprint.
 
-| **Use Case**
-| A single, critical application needing guaranteed, exclusive throughput without multi-tenant overhead.
-| Providing standardized API access (e.g., an internal `gpt-4` equivalent) to multiple teams with varying usage limits.
 
-| **The 3.3 Engine Requirement**
-| **Standard vLLM.** Runs as a standalone InferenceService.
-| **llm-d (Distributed Inference Server).** +
-_Mandatory in 3.3 for MaaS._ Orchestrates multiple vLLM worker nodes.
 
-| **Governance Layer**
-| Handled at the application level (if at all).
-| **Kuadrant & Gateway API.** Enforces strict, token-aware rate limiting natively at the cluster edge.
+=== Path A: Standalone Serving (The "Race Car")
 
-| **Infrastructure Focus**
-| **Performance Isolation.** The model claims entire GPUs. No sharing.
-| **Cost Efficiency.** GPUs are shared using Time-Slicing, and multi-node setups leverage RoCE networking.
-|===
+ * **The Setup:** A traditional KServe deployment where a model gets a dedicated OpenShift Route and dedicated GPU(s).
+ * **The Pros:** Absolute performance isolation. Zero interference from other workloads.
+ * **The Cons:** Terrible resource utilization if the application isn't constantly inferencing. There is no built-in rate limiting, no API key generation in the UI, and no multi-tenant token tracking.
+ * **When to pitch it:** When a customer has a single, mission-critical application that demands guaranteed, uninterrupted latency and the business unit is willing to pay for dedicated hardware.
 
-[IMPORTANT]
-.Crucial RHOAI 3.3 Architecture Change
-====
-In previous versions, you could build a "MaaS-like" structure using standard vLLM. **In OpenShift AI 3.3, true MaaS capabilities (Tiers, API Keys, Governance) are strictly tied to the `llm-d` (Distributed Inference Server) runtime.** If you deploy a model using standard vLLM in 3.3, it acts as a standalone service and bypasses the MaaS governance layer. **This course focuses entirely on Path B: The `llm-d` MaaS Utility.**
-====
+=== Path B: Distributed MaaS (The "City Transit")
 
-== The GitOps Mindset for MaaS
+ * **The Setup:** The model is deployed using the Distributed Inference Server (`llm-d`), published as a MaaS endpoint, and placed behind the Kubernetes Gateway API and Kuadrant governance engine.
+ * **The Pros:** Massive ROI. GPUs are pooled and shared. Developers are issued API keys and placed into Service Tiers (e.g., Free, Premium) to prevent any one team from exhausting the system. Cross-departmental chargebacks become possible.
+  * **The Cons:** Requires a much more complex architectural foundation (which we will cover next).
+ * **When to pitch it:** When the business wants to become an "internal AI provider" for its developers, offering a standard catalog of approved models (like Granite or Llama) to the entire organization securely.
 
-OpenShift AI 3.3 introduces the "Gen AI Studio" and a MaaS Dashboard, allowing administrators to click buttons to create Service Tiers and assign limits. 
+== Next Steps: Understanding the Blueprint
 
-However, in an industrialized enterprise, **clickOps is an anti-pattern**. 
+Now that we know *why* we are pitching MaaS to maximize the customer's hardware ROI, we need to understand *how* it actually works. 
 
-Everything you see in the 3.3 dashboard is a visual representation of declarative Kubernetes Custom Resources. By treating MaaS as code, you can reverse-engineer the deployments we provide in this course and integrate them directly into your ArgoCD or OpenShift GitOps pipelines.
-
-When we deploy MaaS, we are deploying a coordinated stack of YAML manifests covering:
-
- 1. **The Infrastructure:** `ClusterPolicy` (for GPU Slicing) and `NetworkAttachmentDefinition` (for RoCE).
- 2. **The Control Plane:** The `DataScienceCluster` CR configured for `modelsAsService: Managed`.
- 3. **The Governance:** Service Tiers defined as code, driving underlying Kuadrant `RateLimitPolicy` manifests.
- 4. **The Workload:** The `InferenceService` pointing to the `llm-d` runtime.
-
-== The New Vocabulary: RHOAI 3.3 Taxonomy
-
-To build this declarative factory, you must master the new components that replace older paradigms.
-
-llm-d (Distributed Inference Server):::
-The mandatory orchestrator for MaaS in 3.3. It acts as the intelligent router, receiving requests and distributing them efficiently across multiple backend vLLM worker engines. It enables cache-aware scheduling and separates the "prefill" phase from the "decode" phase to eliminate latency bottlenecks.
-
-Kuadrant & Gateway API (The Bouncer):::
-The governance layer. The Gateway API handles routing (replacing standard OpenShift Routes). Kuadrant sits at this gateway to enforce **token-aware rate limiting**. It ensures that a user in the "Free Tier" cannot exceed their allotted token count, returning a `429 Too Many Requests` status before the traffic ever hits the expensive GPUs.
-
-Service Tiers:::
-The business-logic layer. In 3.3, you define Tiers (e.g., Free, Premium) that map directly to OpenShift User Groups. These tiers dictate the strict request rates and token quotas enforced by Kuadrant.
-
-GPU Time-Slicing & RoCE:::
-The hardware efficiency layer. **Time-Slicing** allows multiple `llm-d` workloads to share a single physical GPU by dividing processing time. For massive models spanning multiple nodes, **RoCE (RDMA over Converged Ethernet)** allows GPUs on different servers to communicate directly with sub-microsecond latency, bypassing the CPU entirely.
-
-== Next Steps: Understand the Blueprint
-
-You understand the strategy and the GitOps philosophy. You speak the new 3.3 language. Now, we must look at how these YAML components fit together conceptually before we deploy them.
+If we just click "Deploy" in the UI without understanding the backend, we will fail. In the next module, we will look under the hood at the "Invisible Dependency Chain" of operators that make this City Transit system run.
