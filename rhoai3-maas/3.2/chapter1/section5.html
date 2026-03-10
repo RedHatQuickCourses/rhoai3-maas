@@ -3,7 +3,10 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Untitled :: Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</title>
+    <title>Day-2 Operations: Keeping the Factory Running (OpenShift AI 3.3) :: Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</title>
+    <link rel="prev" href="section4.html">
+    <link rel="next" href="quiz.html">
+    <meta name="description" content="How to equip customer operations teams to monitor, debug, and tune the Red Hat OpenShift AI 3.3 Models-as-a-Service stack when things go wrong.">
     <meta name="generator" content="Antora 3.1.3">
     <link rel="stylesheet" href="../../../_/css/site.css">
     <script>var uiRootPath = '../../../_'</script>
@@ -56,6 +59,9 @@
   <li class="nav-item" data-depth="1">
     <a class="nav-link" href="section4.html">Day-2 Operations</a>
   </li>
+  <li class="nav-item is-current-page" data-depth="1">
+    <a class="nav-link" href="section5.html">New</a>
+  </li>
   <li class="nav-item" data-depth="1">
     <a class="nav-link" href="quiz.html">Quiz</a>
   </li>
@@ -88,6 +94,10 @@
 <button class="nav-toggle"></button>
   <a href="../index.html" class="home-link"></a>
 <nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</a></li>
+    <li><a href="section5.html">New</a></li>
+  </ul>
 </nav>
 </div>
   <div class="content">
@@ -95,11 +105,28 @@
   <div class="toc-menu"></div>
 </aside>
 <article class="doc">
+<h1 class="page">Day-2 Operations: Keeping the Factory Running (OpenShift AI 3.3)</h1>
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph lead">
+<p><strong>As a Solution Architect or Consultant, your job isn&#8217;t done when the deployment turns green. You have to teach the customer how to keep the factory running.</strong></p>
+</div>
+<div class="paragraph">
+<p>In an industrialized Models-as-a-Service (MaaS) environment, a "broken" service is rarely just a crashing pod. Because OpenShift AI 3.3 disaggregates the architecture to maximize ROI, an issue could be a misconfigured Gateway route, a strict Connectivity Link (Kuadrant) rate limit, a missing OpenShift group mapping, or saturated GPU memory.</p>
+</div>
+<div class="paragraph">
+<p>This guide covers the critical observability signals and the most common failure scenarios you need to train customer Site Reliability Engineers (SREs) to handle.</p>
+</div>
+</div>
+</div>
 <div class="sect1">
-<h2 id="_quick_reference_3_3_maas_commands"><a class="anchor" href="#_quick_reference_3_3_maas_commands"></a>Quick Reference: 3.3 MaaS Commands</h2>
+<h2 id="_1_the_dashboard_what_to_watch_observability"><a class="anchor" href="#_1_the_dashboard_what_to_watch_observability"></a>1. The Dashboard: What to Watch (Observability)</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Keep these CLI commands handy when investigating the MaaS stack.</p>
+<p>Before debugging, the customer&#8217;s operations team needs visibility. Do not let them rely solely on developer complaints. OpenShift AI 3.3 provides out-of-the-box metrics for monitoring the model serving platform.</p>
+</div>
+<div class="paragraph">
+<p>Show the customer how to query these metrics directly in the OpenShift web console under <strong>Observe &#8594; Metrics</strong>.</p>
 </div>
 <table class="tableblock frame-all grid-all stretch">
 <colgroup>
@@ -108,39 +135,160 @@
 </colgroup>
 <thead>
 <tr>
-<th class="tableblock halign-left valign-top">Goal</th>
-<th class="tableblock halign-left valign-top">Command</th>
+<th class="tableblock halign-left valign-top">Metric</th>
+<th class="tableblock halign-left valign-top">What it tells the SRE</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>List MaaS deployments</strong></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>oc get llminferenceservice -n &lt;namespace&gt;</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Number of Requests</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Evaluated via <code>sum(increase(vllm:request_success_total{&#8230;&#8203;}))</code>. Tracks the overall throughput of the factory. Sudden drops indicate upstream network/Gateway issues or model crashes.</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Check Tier Mappings</strong></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>oc get configmap tier-to-group-mapping -n redhat-ods-applications -o yaml</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Average Response Time</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Evaluated via <code>histogram_quantile(0.95, sum(rate(vllm:request_duration_seconds_bucket{&#8230;&#8203;}))</code>. If the 95th percentile response time spikes, the <code>llm-d</code> workers are being saturated. It is time to add more GPU replicas to the tier.</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Verify MaaS API Health</strong></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>oc get pods -n redhat-ods-applications -l app=maas-api</code></p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Test Token Auth (CLI)</strong></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>curl -I -H "Authorization: Bearer $MAAS_TOKEN" <a href="https://maas.&lt;domain&gt;/v1/models" class="bare">https://maas.&lt;domain&gt;/v1/models</a></code></p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Check GPU Availability</strong></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>oc get nodes -l nvidia.com/gpu.present=true</code></p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Verify RoCE Network</strong></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>oc get networkattachmentdefinitions -n &lt;namespace&gt;</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Token Generation Rate</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Evaluated via <code>sum(rate(vllm:prompt_tokens_total{&#8230;&#8203;}))</code>. This is the core "business metric." It proves to leadership how much the factory is actually producing and is vital for chargeback models.</p></td>
 </tr>
 </tbody>
 </table>
 </div>
 </div>
+<div class="sect1">
+<h2 id="_2_troubleshooting_scenario_a_the_401_unauthorized_wall"><a class="anchor" href="#_2_troubleshooting_scenario_a_the_401_unauthorized_wall"></a>2. Troubleshooting Scenario A: The "401 Unauthorized" Wall</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><strong>Symptom:</strong> A developer&#8217;s script receives a <code>401 Unauthorized</code> HTTP error when calling the MaaS endpoint.
+<strong>The Component:</strong> Kuadrant (Authorino) &amp; The Gateway.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Cause 1: Missing or Malformed Token.</strong> The developer forgot to include the <code>Authorization: Bearer &lt;token&gt;</code> header, or the token expired.</p>
+</li>
+<li>
+<p><strong>Cause 2: Broken Trust.</strong> Authorino cannot validate the token signature against the OpenShift AI backend.</p>
+</li>
+<li>
+<p><strong>The Fix:</strong> Have the user generate a fresh token in the Gen AI Studio. If the issue persists across all users, check the Authorino pods in the <code>kuadrant-system</code> namespace. If they are restarting, the governance engine is failing open/closed depending on the Gateway policy.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_3_troubleshooting_scenario_b_the_403_forbidden_trap"><a class="anchor" href="#_3_troubleshooting_scenario_b_the_403_forbidden_trap"></a>3. Troubleshooting Scenario B: The "403 Forbidden" Trap</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><strong>Symptom:</strong> The developer has a valid token (no 401), but receives a <code>403 Forbidden</code> error.
+<strong>The Component:</strong> Service Tiers &amp; RBAC.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Cause:</strong> The user&#8217;s token is valid, but they belong to an OpenShift group that has <strong>not</strong> been mapped to a Service Tier in the MaaS settings, OR the model they are trying to access was published only to a specific tier (e.g., Premium) and they are in the Free tier.</p>
+</li>
+<li>
+<p><strong>The Fix:</strong> Go to <strong>Settings &#8594; Tiers</strong> in the Gen AI Studio. Verify the user&#8217;s group is listed under a tier. Then, check the Model Deployment settings to ensure that tier has permission to view the model.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_4_troubleshooting_scenario_c_the_429_too_many_requests_working_as_intended"><a class="anchor" href="#_4_troubleshooting_scenario_c_the_429_too_many_requests_working_as_intended"></a>4. Troubleshooting Scenario C: The "429 Too Many Requests" (Working as Intended)</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><strong>Symptom:</strong> The developer&#8217;s script suddenly fails with a <code>429 Too Many Requests</code> error.
+<strong>The Component:</strong> Kuadrant (Limitador).</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Cause:</strong> <strong>This is not a bug; it is a feature.</strong> The developer has exhausted their token or request limit for their assigned Service Tier. Limitador is actively protecting the GPUs.</p>
+</li>
+<li>
+<p><strong>The Fix:</strong> This is an application architecture issue, not an infrastructure issue. Teach the developer to look for the <code>Retry-After</code> HTTP header in the 429 response and implement exponential backoff in their code. If they consistently hit the limit, the business needs to upgrade their OpenShift group to a higher Service Tier.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_5_troubleshooting_scenario_d_the_silent_queue_pending_pods_kueue_alerts"><a class="anchor" href="#_5_troubleshooting_scenario_d_the_silent_queue_pending_pods_kueue_alerts"></a>5. Troubleshooting Scenario D: The Silent Queue (Pending Pods &amp; Kueue Alerts)</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><strong>Symptom:</strong> A new model deployment stays in a <code>Pending</code> state indefinitely, or scale-out replicas refuse to schedule.
+<strong>The Component:</strong> Kueue Operator &amp; Hardware.</p>
+</div>
+<div class="paragraph">
+<p>When <code>llm-d</code> asks for a GPU, the Kueue operator acts as the bank. If the bank is empty, the pod pends. You must train customer SREs to monitor specific <strong>Kueue Alerting Rules</strong> in the OpenShift Observe dashboard:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Alert: <code>PendingWorkloadPods</code></strong> <strong>* *Meaning:</strong> The pod is asking for resources (e.g., <code>nvidia.com/gpu: 1</code>), but the <code>ClusterQueue</code> quota is exhausted.</p>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>The Fix:</strong> Check <code>oc get clusterqueue</code>. If the quota is maxed out, the customer either needs to buy more physical GPUs, or adjust their time-slicing policies to share existing GPUs more aggressively.</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p><strong>Alert: <code>KueuePodDown</code> or Image Pull Timeouts</strong></p>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Meaning:</strong> In 3.3, if your <code>llm-d</code> container image is exceptionally large (e.g., pulling a massive 70B model directly into the pod), Kueue might terminate the pod before it finishes pulling. By default, Kueue only waits 5 minutes before failing the workload.</p>
+</li>
+<li>
+<p><strong>The Fix:</strong> Pre-fetch the model to a PVC, or adjust the Kueue configuration timeouts for that specific <code>LocalQueue</code>.</p>
+</li>
+</ul>
+</div>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_conclusion_you_are_ready_to_enable_the_customer"><a class="anchor" href="#_conclusion_you_are_ready_to_enable_the_customer"></a>Conclusion: You Are Ready to Enable the Customer</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>You have completed the <strong>Red Hat OpenShift AI 3.3 Models-as-a-Service Enablement Journey</strong>.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>You can pitch the <strong>Business Value &amp; Strategy</strong> (The Race Car vs. The City Transit).</p>
+</li>
+<li>
+<p>You understand the <strong>Invisible Dependency Chain</strong> (Gateway, Kuadrant, Kueue, LWS).</p>
+</li>
+<li>
+<p>You can <strong>Build the Factory</strong> via GitOps (The Platform Engineer Track).</p>
+</li>
+<li>
+<p>You can <strong>Govern the Business</strong> via the Gen AI Studio (The AI Admin Track).</p>
+</li>
+<li>
+<p>You can <strong>Equip the SREs</strong> to maintain the system (Day-2 Operations).</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>You now have the tools and the narrative to help our enterprise customers stop treating AI like a science project, and start running it like an industrialized factory. Go build.</p>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="section4.html">Day-2 Operations</a></span>
+  <span class="next"><a href="quiz.html">Quiz</a></span>
+</nav>
 </article>
   </div>
 </main>

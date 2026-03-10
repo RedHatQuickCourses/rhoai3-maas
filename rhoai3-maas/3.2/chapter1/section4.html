@@ -3,10 +3,10 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Day-2 Operations: Keeping the Factory Running (OpenShift AI 3.3) :: Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</title>
+    <title>Governing the AI Factory: The AI Administrator Lab (OpenShift AI 3.3) :: Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</title>
     <link rel="prev" href="section3.html">
-    <link rel="next" href="quiz.html">
-    <meta name="description" content="How to monitor, debug, and tune the Red Hat OpenShift AI 3.3 distributed MaaS stack when things go wrong.">
+    <link rel="next" href="section5.html">
+    <meta name="description" content="How to use the OpenShift AI 3.3 Gen AI Studio to configure Service Tiers, deploy models as MaaS endpoints, and generate API keys for enterprise consumers.">
     <meta name="generator" content="Antora 3.1.3">
     <link rel="stylesheet" href="../../../_/css/site.css">
     <script>var uiRootPath = '../../../_'</script>
@@ -60,6 +60,9 @@
     <a class="nav-link" href="section4.html">Day-2 Operations</a>
   </li>
   <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="section5.html">New</a>
+  </li>
+  <li class="nav-item" data-depth="1">
     <a class="nav-link" href="quiz.html">Quiz</a>
   </li>
 </ul>
@@ -102,249 +105,188 @@
   <div class="toc-menu"></div>
 </aside>
 <article class="doc">
-<h1 class="page">Day-2 Operations: Keeping the Factory Running (OpenShift AI 3.3)</h1>
+<h1 class="page">Governing the AI Factory: The AI Administrator Lab (OpenShift AI 3.3)</h1>
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph lead">
-<p><strong>Building the factory is Step 1. Keeping it running is the rest of your career.</strong></p>
+<p><strong>The Platform Engineers have finished building the factory. The Gateway is open, Kueue is managing the GPUs, and Kuadrant is standing by. Now, it&#8217;s time to run the business.</strong></p>
 </div>
 <div class="paragraph">
-<p>In an industrialized MaaS environment, a "broken" service is rarely just a crashing pod. Because OpenShift AI 3.3 disaggregates the architecture, an issue could be a misconfigured Gateway route, a strict Connectivity Link (Kuadrant) rate limit, a missing OpenShift group mapping in your Service Tiers, or saturated GPU memory.</p>
+<p>In this module, we are changing personas. You are no longer writing YAML; you are the customer&#8217;s AI Administrator. Your job is to take the raw infrastructure and turn it into a governed, rate-limited "Models as a Service" product for your internal developers.</p>
 </div>
 <div class="paragraph">
-<p>This guide covers the critical observability signals and the most common failure scenarios in the RHOAI 3.3 MaaS stack.</p>
+<p>We are going to use the new <strong>Gen AI Studio</strong> dashboard to define our service tiers, deploy a model, and generate our first API token.</p>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_1_the_dashboard_what_to_watch"><a class="anchor" href="#_1_the_dashboard_what_to_watch"></a>1. The Dashboard: What to Watch</h2>
+<h2 id="_step_1_defining_the_service_tiers"><a class="anchor" href="#_step_1_defining_the_service_tiers"></a>Step 1: Defining the Service Tiers</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Before debugging, you need visibility. Do not rely solely on user complaints. OpenShift AI 3.3 provides out-of-the-box metrics for monitoring the model serving platform.</p>
+<p>MaaS assigns users to service tiers based on their OpenShift group membership. Tiers are the heart of your ROI strategy—they prevent a single rogue script from exhausting the company&#8217;s GPU budget by enforcing strict token and request limits.</p>
 </div>
-<div class="sect2">
-<h3 id="_key_metrics_openshift_observe_prometheus"><a class="anchor" href="#_key_metrics_openshift_observe_prometheus"></a>Key Metrics (OpenShift Observe / Prometheus)</h3>
 <div class="paragraph">
-<p>You can query these metrics directly in the OpenShift web console under the Developer perspective &#8594; Observe.</p>
+<p>OpenShift AI 3.3 includes three default tiers: Free, Premium, and Enterprise. Let&#8217;s configure the Premium tier for our developers.</p>
 </div>
-<table class="tableblock frame-all grid-all stretch">
-<colgroup>
-<col style="width: 33.3333%;">
-<col style="width: 66.6667%;">
-</colgroup>
-<thead>
-<tr>
-<th class="tableblock halign-left valign-top">Metric</th>
-<th class="tableblock halign-left valign-top">What it tells you</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Number of Requests</strong></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Evaluated via <code>sum(increase(vllm:request_success_total{&#8230;&#8203;}))</code>. Tracks the throughput of the factory. Sudden drops indicate upstream issues or model crashes.</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Average Response Time (ms)</strong></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">The latency the user perceives. High times mean the <code>llm-d</code> system is queuing requests or the GPUs are overloaded.</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>GPU Cache Usage over Time</strong></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Available in the NIM Metrics tab (if using NVIDIA NIMs) or via Prometheus. How full the KV Cache is. If this hits 100%, requests will be rejected or severely delayed.</p></td>
-</tr>
-</tbody>
-</table>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-<div class="title">The Cold Start Trap</div>
-<div class="paragraph">
-<p>Certain vLLM metrics are available only <strong>after</strong> an inference request is processed by a deployed model. To generate and view these metrics, you must first make an inference request to the model.</p>
-</div>
-</td>
-</tr>
-</table>
-</div>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_2_troubleshooting_scenario_a_the_locked_door_401_403_errors"><a class="anchor" href="#_2_troubleshooting_scenario_a_the_locked_door_401_403_errors"></a>2. Troubleshooting Scenario A: The Locked Door (401 / 403 Errors)</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>In 3.3, MaaS is strictly governed by Red Hat Connectivity Link (Authorino). If a user cannot access a model, it is usually a governance failure, not an infrastructure failure.</p>
-</div>
-<div class="sect2">
-<h3 id="_401_unauthorized"><a class="anchor" href="#_401_unauthorized"></a>401 Unauthorized</h3>
-<div class="paragraph">
-<p><strong>Symptom:</strong> User receives an <code>Invalid or expired token</code> error.</p>
-</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Log in to the OpenShift AI dashboard as an administrator.</p>
+</li>
+<li>
+<p>In the left navigation menu, click <strong>Settings</strong> &#8594; <strong>Tiers</strong>.</p>
+</li>
+<li>
+<p>Click the <strong>Premium</strong> tier, then click <strong>Edit tier</strong>.</p>
+</li>
+<li>
+<p><strong>Name &amp; Level:</strong> Leave the name as Premium. The priority <strong>Level</strong> determines who wins if a user is in multiple groups. (e.g., Level 2 overrides Level 1).</p>
+</li>
+<li>
+<p><strong>Groups:</strong> Select the OpenShift group that contains your developers (e.g., <code>data-science-users</code> or <code>premium-api-users</code>).</p>
+</li>
+<li>
+<p><strong>Configure the Rate Limits:</strong> This is where the magic happens.</p>
 <div class="ulist">
 <ul>
 <li>
-<p><strong>Cause:</strong> The user is likely passing a standard Kubernetes ServiceAccount token instead of a MaaS-generated token.</p>
+<p>Select <strong>Enforce token rate limit</strong> and set it to <strong>10,000 tokens per 1 minute</strong>.</p>
 </li>
 <li>
-<p><strong>Fix:</strong> Users must generate a MaaS-specific token from the dashboard. Alternatively, if passing a JWT programmatically, ensure the format is exactly <code>Authorization: Bearer &lt;token&gt;</code>.</p>
+<p>Select <strong>Enforce request rate limit</strong> and set it to <strong>100 requests per 1 minute</strong>.</p>
 </li>
 </ul>
 </div>
+</li>
+<li>
+<p>Click <strong>Update tier</strong>.</p>
+</li>
+</ol>
 </div>
-<div class="sect2">
-<h3 id="_403_forbidden"><a class="anchor" href="#_403_forbidden"></a>403 Forbidden</h3>
 <div class="paragraph">
-<p><strong>Symptom:</strong> User receives <code>Access denied. Your tier does not have permission to access this model.</code>.</p>
+<p><strong>The Pitch:</strong> Remind your customers that Kuadrant is enforcing these limits at the network edge. If a developer exceeds 10,000 tokens, the request is dropped <strong>before</strong> it hits the GPU, saving massive amounts of compute.</p>
 </div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_2_deploying_the_model_the_visual_way"><a class="anchor" href="#_step_2_deploying_the_model_the_visual_way"></a>Step 2: Deploying the Model (The Visual Way)</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In Module 3, we deployed a model using YAML. Now, let&#8217;s see how the AI Administrator does it through the UI to publish a model to the catalog.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>In the left navigation menu, click <strong>Projects</strong> and select your target project (e.g., <code>maas-production</code>).</p>
+</li>
+<li>
+<p>Click the <strong>Deployments</strong> tab, then click <strong>Deploy model</strong>.</p>
+</li>
+<li>
+<p><strong>Model Details:</strong> * Select <strong>Generative AI model</strong> as the Model type.</p>
 <div class="ulist">
 <ul>
 <li>
-<p><strong>Cause:</strong> The model exists, but Kubernetes RBAC RoleBindings are missing, or the user&#8217;s OpenShift group is not mapped to the authorized Tier.</p>
+<p>Specify your model location (e.g., an S3 bucket containing <code>granite-3.0-8b-instruct</code>). Click Next.</p>
+</li>
+</ul>
+</div>
 </li>
 <li>
-<p><strong>Diagnosis:</strong></p>
+<p><strong>Model Deployment:</strong></p>
+<div class="ulist">
+<ul>
+<li>
+<p>Enter a unique deployment name (e.g., <code>granite-premium</code>).</p>
+</li>
+<li>
+<p>Select <strong>Distributed inference with llm-d</strong> as the serving runtime.</p>
+</li>
+<li>
+<p>Select the appropriate hardware profile (e.g., 1 NVIDIA GPU). Click Next.</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p><strong>Advanced Settings (The MaaS Integration):</strong></p>
+<div class="ulist">
+<ul>
+<li>
+<p>Select the <strong>Publish as MaaS endpoint</strong> checkbox. <em>(This is the button that tells Kuadrant to protect the route!)</em></p>
+</li>
+<li>
+<p>Under Tier access, select <strong>Specific tiers</strong> and choose <strong>Premium</strong>.</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Click <strong>Deploy</strong>.</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_step_3_generating_tokens_and_testing_the_factory"><a class="anchor" href="#_step_3_generating_tokens_and_testing_the_factory"></a>Step 3: Generating Tokens and Testing the Factory</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Once the model status displays a green checkmark, the factory is live. The developer can now log in, get their keys, and start building applications.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>In the left navigation menu, go to <strong>Gen AI Studio</strong> &#8594; <strong>AI asset endpoints</strong> &#8594; <strong>Models as a service</strong>.</p>
+</li>
+<li>
+<p>Locate your deployed model. You will see a "MaaS" badge next to its name. Click <strong>View</strong> in the Inference endpoint column.</p>
+</li>
+<li>
+<p>Click <strong>Generate API Key</strong>.</p>
+</li>
+<li>
+<p>Securely copy the token. <strong>(Note: This token is a JSON Web Token (JWT) tied specifically to the user and their assigned tier).</strong></p>
+</li>
+</ol>
+</div>
+<div class="sect2">
+<h3 id="_the_developer_experience"><a class="anchor" href="#_the_developer_experience"></a>The Developer Experience</h3>
+<div class="paragraph">
+<p>Your internal developers can now query the governed endpoint just like they would query OpenAI, but with total data sovereignty.</p>
+</div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># 1. Check if the RoleBinding exists for the user's tier:
-oc get rolebindings -n &lt;your-project-namespace&gt; | grep &lt;your-model-name&gt;
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">export MAAS_TOKEN="&lt;your_generated_token&gt;"
+export INFERENCE_URL="https://maas.&lt;your-cluster-domain&gt;"
 
-# 2. Verify how the MaaS API is resolving the user's tier based on their group:
-oc exec -n redhat-ods-applications deployment/maas-api -- curl -s http://localhost:8080/v1/tiers/lookup -H "Content-Type: application/json" -d '{"groups": ["&lt;user-group-name&gt;"]}'</code></pre>
+curl -k -X POST "${INFERENCE_URL}/llm/granite-premium/v1/chat/completions" \
+  -H "Authorization: Bearer ${MAAS_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "granite-premium",
+    "messages": [{"role": "user", "content": "Write a python script to parse JSON."}],
+    "max_tokens": 500
+  }'</code></pre>
 </div>
 </div>
-</li>
-</ul>
-</div>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_3_troubleshooting_scenario_b_the_stop_sign_429_too_many_requests"><a class="anchor" href="#_3_troubleshooting_scenario_b_the_stop_sign_429_too_many_requests"></a>3. Troubleshooting Scenario B: The Stop Sign (429 Too Many Requests)</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p><strong>Symptom:</strong> Users report their requests are being rejected with a <code>429</code> status code and a <code>Token quota exceeded</code> or <code>Rate limit exceeded</code> message.
-<strong>The Component:</strong> Kuadrant (Limitador).</p>
-</div>
-<div class="paragraph">
-<p>This means the governance factory is working as designed. However, you need to verify why it is triggering.</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p><strong>Check the Headers:</strong> Inspect the HTTP response headers. Limitador injects data to tell the client exactly what happened:</p>
-<div class="ulist">
-<ul>
-<li>
-<p><code>X-RateLimit-Limit</code></p>
-</li>
-<li>
-<p><code>X-RateLimit-Remaining</code></p>
-</li>
-<li>
-<p><code>Retry-After</code></p>
-</li>
-</ul>
-</div>
-</li>
-<li>
-<p><strong>Fix / Mitigation:</strong></p>
-<div class="ulist">
-<ul>
-<li>
-<p>If legitimate traffic is being blocked, the OpenShift AI Administrator needs to edit the Tier settings in the UI to increase the Token Consumption Limits or Request Rate Limits.</p>
-</li>
-<li>
-<p>If the user is sharing a token across multiple applications, advise them to use separate API keys, as limits apply to the aggregate usage.</p>
-</li>
-</ul>
-</div>
-</li>
-</ul>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_4_troubleshooting_scenario_c_the_ghost_ui_maas_tab_missing"><a class="anchor" href="#_4_troubleshooting_scenario_c_the_ghost_ui_maas_tab_missing"></a>4. Troubleshooting Scenario C: The Ghost UI (MaaS Tab Missing)</h2>
+<h2 id="_next_steps_day_2_operations"><a class="anchor" href="#_next_steps_day_2_operations"></a>Next Steps: Day-2 Operations</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p><strong>Symptom:</strong> The Models-as-a-Service tab does not appear in the OpenShift AI dashboard under AI Asset Endpoints.
-<strong>The Component:</strong> DataScienceCluster &amp; OdhDashboardConfig.</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p><strong>Diagnosis &amp; Fix:</strong></p>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># 1. Verify the MaaS API backend component is actually running:
-oc get pods -n redhat-ods-applications -l app=maas-api
-# 2. Check if the Dashboard feature flag is enabled:
-oc get odhdashboardconfig odh-dashboard-config -n redhat-ods-applications -o yaml | grep modelAsService</code></pre>
-</div>
-</div>
-</li>
-<li>
-<p>Ensure that the <code>spec.dashboardConfig.modelAsService</code> is set to <code>true</code>. If it was recently changed, you may need to hard refresh your browser or wait for the dashboard pods to reload.</p>
-</li>
-</ul>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_5_troubleshooting_scenario_d_the_silent_queue_high_latency_pending_pods"><a class="anchor" href="#_5_troubleshooting_scenario_d_the_silent_queue_high_latency_pending_pods"></a>5. Troubleshooting Scenario D: The Silent Queue (High Latency / Pending Pods)</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p><strong>Symptom:</strong> Requests succeed (200 OK) but take a long time, or inference pods stay in a <code>Pending</code> state.
-<strong>The Component:</strong> <code>llm-d</code>, vLLM, and Hardware.</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p><strong>Cause 1: GPU Starvation.</strong> If the pod requests <code>nvidia.com/gpu: 1</code> but no node can satisfy it, the pod will pend. Check the cluster queue configuration to ensure requested resources do not exceed available quotas.</p>
-</li>
-<li>
-<p><strong>Cause 2: Image Pull Timeouts.</strong> In 3.3, if your <code>llm-d</code> or vLLM container image is exceptionally large, the scheduler (Kueue) might terminate the pod before it finishes pulling. By default, Kueue waits 5 minutes.</p>
-</li>
-<li>
-<p><strong>Fix:</strong> Verify hardware availability (<code>oc get nodes -l nvidia.com/gpu.present=true</code> ), or configure the deployment strategy to <code>Recreate</code> instead of <code>Rolling update</code> if you are operating in a resource-constrained environment to prevent double-allocation of GPUs during rollouts.</p>
-</li>
-</ul>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_conclusion_you_are_ready"><a class="anchor" href="#_conclusion_you_are_ready"></a>Conclusion: You Are Ready</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>You have completed the <strong>Red Hat OpenShift AI 3.3 Models-as-a-Service Learning Journey</strong>.</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>You understand the <strong>Strategy</strong> (Standalone vs. Distributed <code>llm-d</code>).</p>
-</li>
-<li>
-<p>You speak the <strong>Taxonomy</strong> (Kuadrant, RoCE, Tiers).</p>
-</li>
-<li>
-<p>You have <strong>Built the Factory</strong> (GitOps Lab).</p>
-</li>
-<li>
-<p>You can <strong>Fix the Machinery</strong> (Day-2 Operations).</p>
-</li>
-</ul>
+<p>The platform is built, the tiers are set, and the tokens are flowing. But what happens when a developer calls you complaining about a <code>429 Too Many Requests</code> error, or a pod gets stuck in a <code>Pending</code> state?</p>
 </div>
 <div class="paragraph">
-<p><strong>Next Steps:</strong>
-Go to the <strong>Red Hat Hybrid Cloud Console</strong> and start your pilot deployment.</p>
+<p>In the final module, we will put on our Site Reliability Engineer (SRE) hats and look at Day-2 Operations and Troubleshooting to keep the factory running smoothly.</p>
 </div>
 </div>
 </div>
 <nav class="pagination">
   <span class="prev"><a href="section3.html">Lab: Build Your MaaS</a></span>
-  <span class="next"><a href="quiz.html">Quiz</a></span>
+  <span class="next"><a href="section5.html">New</a></span>
 </nav>
 </article>
   </div>

@@ -3,10 +3,10 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Strategy &amp; Taxonomy: Defining Your Path to Production (OpenShift AI 3.3) :: Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</title>
+    <title>Strategy: Defining Your Path to Production (OpenShift AI 3.3) :: Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</title>
     <link rel="prev" href="../index.html">
     <link rel="next" href="section2.html">
-    <meta name="description" content="Define the strategic deployment models in Red Hat OpenShift AI 3.3, understand the GitOps approach to MaaS, and master the new vocabulary (llm-d, RoCE, Kuadrant).">
+    <meta name="description" content="Define the strategic deployment models in Red Hat OpenShift AI 3.3 and understand when to pitch Standalone Model Serving versus Distributed Models as a Service (MaaS).">
     <meta name="generator" content="Antora 3.1.3">
     <link rel="stylesheet" href="../../../_/css/site.css">
     <script>var uiRootPath = '../../../_'</script>
@@ -60,6 +60,9 @@
     <a class="nav-link" href="section4.html">Day-2 Operations</a>
   </li>
   <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="section5.html">New</a>
+  </li>
+  <li class="nav-item" data-depth="1">
     <a class="nav-link" href="quiz.html">Quiz</a>
   </li>
 </ul>
@@ -102,17 +105,17 @@
   <div class="toc-menu"></div>
 </aside>
 <article class="doc">
-<h1 class="page">Strategy &amp; Taxonomy: Defining Your Path to Production (OpenShift AI 3.3)</h1>
+<h1 class="page">Strategy: Defining Your Path to Production (OpenShift AI 3.3)</h1>
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph lead">
-<p>Before you write a single line of YAML or commit to your Git repository, you must choose your architectural strategy.</p>
+<p><strong>Before we write a single line of YAML or commit to a Git repository, we have to help the customer choose their architectural strategy.</strong></p>
 </div>
 <div class="paragraph">
 <p>In Red Hat OpenShift AI 3.3, "model serving" has split into two very specific, mechanically different paths. Choosing the wrong path leads to either wasted infrastructure spend or an inability to apply governance.</p>
 </div>
 <div class="paragraph">
-<p>Furthermore, while 3.3 introduces a powerful new UI for managing these features, our approach is <strong>GitOps-First</strong>. We use the UI to understand the business logic, but we deploy the underlying Kubernetes Custom Resources (CRs) to ensure our AI factory is version-controlled, reproducible, and scalable.</p>
+<p>Our job is to guide the customer. We need to look at their use cases and explain why not every AI workload should be deployed the same way.</p>
 </div>
 </div>
 </div>
@@ -120,133 +123,69 @@
 <h2 id="_the_strategic_divide_standalone_vs_distributed_maas"><a class="anchor" href="#_the_strategic_divide_standalone_vs_distributed_maas"></a>The Strategic Divide: Standalone vs. Distributed MaaS</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Not every AI workload is the same. Serving a massive, fine-tuned model for a single, high-frequency trading application requires a different architecture than providing a general-purpose, rate-limited LLM API to 500 enterprise developers.</p>
+<p>Not every AI workload is the same. Serving a massive, fine-tuned model for a single, high-frequency internal application requires a different architecture than providing a general-purpose, rate-limited LLM API to 500 enterprise developers across different departments.</p>
 </div>
-<table class="tableblock frame-all grid-all stretch">
-<colgroup>
-<col style="width: 14.2857%;">
-<col style="width: 42.8571%;">
-<col style="width: 42.8572%;">
-</colgroup>
-<thead>
-<tr>
-<th class="tableblock halign-left valign-top">Feature</th>
-<th class="tableblock halign-left valign-top">Path A: Standalone Serving (The "Specialist")</th>
-<th class="tableblock halign-left valign-top">Path B: Distributed MaaS (The "Utility")</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Analogy</strong></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">A private race car. Optimized for one driver and maximum speed on a specific track.</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">A city transit system. Optimized for reliability, sharing resources efficiently among many riders, and metered usage.</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Use Case</strong></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">A single, critical application needing guaranteed, exclusive throughput without multi-tenant overhead.</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Providing standardized API access (e.g., an internal <code>gpt-4</code> equivalent) to multiple teams with varying usage limits.</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>The 3.3 Engine Requirement</strong></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Standard vLLM.</strong> Runs as a standalone InferenceService.</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>llm-d (Distributed Inference Server).</strong><br>
-<em>Mandatory in 3.3 for MaaS.</em> Orchestrates multiple vLLM worker nodes.</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Governance Layer</strong></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Handled at the application level (if at all).</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Kuadrant &amp; Gateway API.</strong> Enforces strict, token-aware rate limiting natively at the cluster edge.</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Infrastructure Focus</strong></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Performance Isolation.</strong> The model claims entire GPUs. No sharing.</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Cost Efficiency.</strong> GPUs are shared using Time-Slicing, and multi-node setups leverage RoCE networking.</p></td>
-</tr>
-</tbody>
-</table>
-<div class="admonitionblock important">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-important" title="Important"></i>
-</td>
-<td class="content">
-<div class="title">Crucial RHOAI 3.3 Architecture Change</div>
 <div class="paragraph">
-<p>In previous versions, you could build a "MaaS-like" structure using standard vLLM. <strong>In OpenShift AI 3.3, true MaaS capabilities (Tiers, API Keys, Governance) are strictly tied to the <code>llm-d</code> (Distributed Inference Server) runtime.</strong> If you deploy a model using standard vLLM in 3.3, it acts as a standalone service and bypasses the MaaS governance layer. <strong>This course focuses entirely on Path B: The <code>llm-d</code> MaaS Utility.</strong></p>
+<p>When positioning OpenShift AI to leadership, think of it like transportation:</p>
 </div>
-</td>
-</tr>
-</table>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Standalone Serving</strong> is a <strong>Race Car</strong>. It is purpose-built, highly tuned for a single driver (application), and consumes dedicated resources. It&#8217;s incredibly fast, but it doesn&#8217;t scale to handle the general public.</p>
+</li>
+<li>
+<p><strong>Models as a Service (MaaS)</strong> is <strong>City Transit</strong>. It is designed for high throughput, shared resources, and access control (tickets/tokens). It efficiently moves hundreds of people (developers) using the same infrastructure footprint.</p>
+</li>
+</ul>
+</div>
+<div class="sect2">
+<h3 id="_path_a_standalone_serving_the_race_car"><a class="anchor" href="#_path_a_standalone_serving_the_race_car"></a>Path A: Standalone Serving (The "Race Car")</h3>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>The Setup:</strong> A traditional KServe deployment where a model gets a dedicated OpenShift Route and dedicated GPU(s).</p>
+</li>
+<li>
+<p><strong>The Pros:</strong> Absolute performance isolation. Zero interference from other workloads.</p>
+</li>
+<li>
+<p><strong>The Cons:</strong> Terrible resource utilization if the application isn&#8217;t constantly inferencing. There is no built-in rate limiting, no API key generation in the UI, and no multi-tenant token tracking.</p>
+</li>
+<li>
+<p><strong>When to pitch it:</strong> When a customer has a single, mission-critical application that demands guaranteed, uninterrupted latency and the business unit is willing to pay for dedicated hardware.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_path_b_distributed_maas_the_city_transit"><a class="anchor" href="#_path_b_distributed_maas_the_city_transit"></a>Path B: Distributed MaaS (The "City Transit")</h3>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>The Setup:</strong> The model is deployed using the Distributed Inference Server (<code>llm-d</code>), published as a MaaS endpoint, and placed behind the Kubernetes Gateway API and Kuadrant governance engine.</p>
+</li>
+<li>
+<p><strong>The Pros:</strong> Massive ROI. GPUs are pooled and shared. Developers are issued API keys and placed into Service Tiers (e.g., Free, Premium) to prevent any one team from exhausting the system. Cross-departmental chargebacks become possible.</p>
+</li>
+<li>
+<p><strong>The Cons:</strong> Requires a much more complex architectural foundation (which we will cover next).</p>
+</li>
+<li>
+<p><strong>When to pitch it:</strong> When the business wants to become an "internal AI provider" for its developers, offering a standard catalog of approved models (like Granite or Llama) to the entire organization securely.</p>
+</li>
+</ul>
+</div>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_the_gitops_mindset_for_maas"><a class="anchor" href="#_the_gitops_mindset_for_maas"></a>The GitOps Mindset for MaaS</h2>
+<h2 id="_next_steps_understanding_the_blueprint"><a class="anchor" href="#_next_steps_understanding_the_blueprint"></a>Next Steps: Understanding the Blueprint</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>OpenShift AI 3.3 introduces the "Gen AI Studio" and a MaaS Dashboard, allowing administrators to click buttons to create Service Tiers and assign limits.</p>
+<p>Now that we know <strong>why</strong> we are pitching MaaS to maximize the customer&#8217;s hardware ROI, we need to understand <strong>how</strong> it actually works.</p>
 </div>
 <div class="paragraph">
-<p>However, in an industrialized enterprise, <strong>clickOps is an anti-pattern</strong>.</p>
-</div>
-<div class="paragraph">
-<p>Everything you see in the 3.3 dashboard is a visual representation of declarative Kubernetes Custom Resources. By treating MaaS as code, you can reverse-engineer the deployments we provide in this course and integrate them directly into your ArgoCD or OpenShift GitOps pipelines.</p>
-</div>
-<div class="paragraph">
-<p>When we deploy MaaS, we are deploying a coordinated stack of YAML manifests covering:</p>
-</div>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p><strong>The Infrastructure:</strong> <code>ClusterPolicy</code> (for GPU Slicing) and <code>NetworkAttachmentDefinition</code> (for RoCE).</p>
-</li>
-<li>
-<p><strong>The Control Plane:</strong> The <code>DataScienceCluster</code> CR configured for <code>modelsAsService: Managed</code>.</p>
-</li>
-<li>
-<p><strong>The Governance:</strong> Service Tiers defined as code, driving underlying Kuadrant <code>RateLimitPolicy</code> manifests.</p>
-</li>
-<li>
-<p><strong>The Workload:</strong> The <code>InferenceService</code> pointing to the <code>llm-d</code> runtime.</p>
-</li>
-</ol>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_the_new_vocabulary_rhoai_3_3_taxonomy"><a class="anchor" href="#_the_new_vocabulary_rhoai_3_3_taxonomy"></a>The New Vocabulary: RHOAI 3.3 Taxonomy</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>To build this declarative factory, you must master the new components that replace older paradigms.</p>
-</div>
-<div class="dlist">
-<dl>
-<dt class="hdlist1">llm-d (Distributed Inference Server)</dt>
-<dd>
-<p>The mandatory orchestrator for MaaS in 3.3. It acts as the intelligent router, receiving requests and distributing them efficiently across multiple backend vLLM worker engines. It enables cache-aware scheduling and separates the "prefill" phase from the "decode" phase to eliminate latency bottlenecks.</p>
-</dd>
-<dt class="hdlist1">Kuadrant &amp; Gateway API (The Bouncer)</dt>
-<dd>
-<p>The governance layer. The Gateway API handles routing (replacing standard OpenShift Routes). Kuadrant sits at this gateway to enforce <strong>token-aware rate limiting</strong>. It ensures that a user in the "Free Tier" cannot exceed their allotted token count, returning a <code>429 Too Many Requests</code> status before the traffic ever hits the expensive GPUs.</p>
-</dd>
-<dt class="hdlist1">Service Tiers</dt>
-<dd>
-<p>The business-logic layer. In 3.3, you define Tiers (e.g., Free, Premium) that map directly to OpenShift User Groups. These tiers dictate the strict request rates and token quotas enforced by Kuadrant.</p>
-</dd>
-<dt class="hdlist1">GPU Time-Slicing &amp; RoCE</dt>
-<dd>
-<p>The hardware efficiency layer. <strong>Time-Slicing</strong> allows multiple <code>llm-d</code> workloads to share a single physical GPU by dividing processing time. For massive models spanning multiple nodes, <strong>RoCE (RDMA over Converged Ethernet)</strong> allows GPUs on different servers to communicate directly with sub-microsecond latency, bypassing the CPU entirely.</p>
-</dd>
-</dl>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_next_steps_understand_the_blueprint"><a class="anchor" href="#_next_steps_understand_the_blueprint"></a>Next Steps: Understand the Blueprint</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>You understand the strategy and the GitOps philosophy. You speak the new 3.3 language. Now, we must look at how these YAML components fit together conceptually before we deploy them.</p>
+<p>If we just click "Deploy" in the UI without understanding the backend, we will fail. In the next module, we will look under the hood at the "Invisible Dependency Chain" of operators that make this City Transit system run.</p>
 </div>
 </div>
 </div>
