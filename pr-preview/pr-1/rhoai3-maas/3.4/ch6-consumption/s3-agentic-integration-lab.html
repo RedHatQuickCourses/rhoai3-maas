@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Lab: Agentic Integration with OpenShift DevSpaces :: Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</title>
+    <link rel="prev" href="s2-api-consumption-lab.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/REPLACEREPONAME/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="rhoai3-maas" data-version="3.4">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Introduction &amp; Value</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../ch1-architecture/index.html">Design a MaaS Architecture</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../ch1-architecture/s1-gpu-silo.html">Solving the GPU Silo Crisis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../ch1-architecture/s2-architecture-stack.html">The Core Architecture Stack and GPU Strategy</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../ch1-architecture/s3-validation-quiz.html">Quiz: Architecture Validation</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../ch2-configuration/index.html">Configure the MaaS Platform and Ecosystem</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../ch2-configuration/s1-ecosystem-operators.html">Hardware Acceleration and Ecosystem Operators</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../ch2-configuration/s2-enable-maas-lab.html">Lab: Enabling the MaaS Component</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../ch2-configuration/s3-governance-tiers-lab.html">Lab: Defining Governance Tiers</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../ch3-model-selection/index.html">Formulate a Model Selection Strategy</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../ch3-model-selection/s1-model-architecture.html">Understanding Model Architecture: Dense vs. Sparse</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../ch3-model-selection/s2-capability-assessment.html">Assessing Model Capabilities: Reasoning vs. Non-Reasoning</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../ch3-model-selection/s3-selection-criteria-quiz.html">Quiz: Model Selection Criteria</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../ch4-deployment/index.html">Deploy Models for MaaS</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../ch4-deployment/s1-distributed-inference.html">Distributed Inference with llm-d and vLLM</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../ch4-deployment/s2-publish-model-lab.html">Lab: Publishing and Instrumenting a Model</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../ch4-deployment/s3-lifecycle-management-lab.html">Lab: Lifecycle Management and GitOps</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../ch5-observability/index.html">Track Metrics and Usage</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../ch5-observability/s1-observability-stack.html">The MaaS Observability Stack</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../ch5-observability/s2-metrics-visualization-lab.html">Lab: Visualizing Token and Request Data</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="index.html">Consume MaaS Endpoints and Agentic Integrations</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="s1-developer-experience.html">The Developer Experience</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="s2-api-consumption-lab.html">Lab: Consuming the OpenAI-Compatible API</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="s3-agentic-integration-lab.html">Lab: Agentic Integration with OpenShift DevSpaces</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</span>
+    <span class="version">3.4</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">3.4</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</a></li>
+    <li><a href="index.html">Consume MaaS Endpoints and Agentic Integrations</a></li>
+    <li><a href="s3-agentic-integration-lab.html">Lab: Agentic Integration with OpenShift DevSpaces</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Lab: Agentic Integration with OpenShift DevSpaces</h1>
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p><em>Estimated reading time: <strong>30 minutes</strong>.</em></p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">Objective</dt>
+<dd>
+<p>Connect the published Nemotron model to OpenShift DevSpaces acting as an IDE with a code assistant, utilizing standard REST API calls and the generated MaaS endpoint. Complete the final capstone demonstration showing the full MaaS ecosystem with developer integration.</p>
+</dd>
+</dl>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+Not started yet.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_before_you_begin"><a class="anchor" href="#_before_you_begin"></a>Before you begin</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Ensure you have:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>OpenShift DevSpaces installed on your cluster</p>
+</li>
+<li>
+<p>A MaaS API key with access to a model endpoint</p>
+</li>
+<li>
+<p>The MaaS base URL for your cluster</p>
+</li>
+<li>
+<p>Basic familiarity with VS Code or similar IDEs</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_instructions"><a class="anchor" href="#_instructions"></a>Instructions</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_step_1_access_openshift_devspaces"><a class="anchor" href="#_step_1_access_openshift_devspaces"></a>Step 1: Access OpenShift DevSpaces</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Navigate to the DevSpaces dashboard:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-console hljs" data-lang="console">$ oc get route devspaces -n openshift-devspaces</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Log in with your OpenShift credentials</p>
+</li>
+<li>
+<p>Create a new workspace or open an existing one</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_step_2_configure_continue_dev_for_maas"><a class="anchor" href="#_step_2_configure_continue_dev_for_maas"></a>Step 2: Configure Continue.dev for MaaS</h3>
+<div class="paragraph">
+<p>Continue.dev is a popular AI code assistant extension that works with OpenAI-compatible APIs.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Install the Continue extension in DevSpaces (VS Code-based IDE)</p>
+</li>
+<li>
+<p>Create a Continue configuration file <code>.continue/config.json</code>:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">{
+  "models": [
+    {
+      "title": "MaaS Nemotron",
+      "provider": "openai",
+      "model": "nemotron-3-nano",
+      "apiKey": "maas_ABC123...",
+      "apiBase": "https://maas.apps.cluster.example.com/v1",
+      "contextLength": 8192,
+      "completionOptions": {
+        "maxTokens": 1000,
+        "temperature": 0.3
+      }
+    }
+  ],
+  "tabAutocompleteModel": {
+    "title": "MaaS Nemotron Autocomplete",
+    "provider": "openai",
+    "model": "nemotron-3-nano",
+    "apiKey": "maas_ABC123...",
+    "apiBase": "https://maas.apps.cluster.example.com/v1"
+  },
+  "allowAnonymousTelemetry": false
+}</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Alternatively, use environment variables for security:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">{
+  "models": [
+    {
+      "title": "MaaS Nemotron",
+      "provider": "openai",
+      "model": "nemotron-3-nano",
+      "apiKey": "${MAAS_API_KEY}",
+      "apiBase": "${MAAS_BASE_URL}"
+    }
+  ]
+}</code></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>Set environment variables in DevSpaces:</p>
+</div>
+<div class="paragraph">
+<p>+</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-console hljs" data-lang="console">$ export MAAS_API_KEY="maas_ABC123..."
+$ export MAAS_BASE_URL="https://maas.apps.cluster.example.com/v1"</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_step_3_test_code_completion"><a class="anchor" href="#_step_3_test_code_completion"></a>Step 3: Test Code Completion</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Create a new Python file <code>test.py</code></p>
+</li>
+<li>
+<p>Start typing a function and trigger the AI assistant:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-python hljs" data-lang="python">def calculate_fibonacci(n):
+    """Calculate the nth Fibonacci number using recursion."""
+    # &lt;Trigger Continue.dev here with Cmd+I or Ctrl+I&gt;</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>The AI assistant should generate code completion:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-python hljs" data-lang="python">def calculate_fibonacci(n):
+    """Calculate the nth Fibonacci number using recursion."""
+    if n &lt;= 1:
+        return n
+    return calculate_fibonacci(n-1) + calculate_fibonacci(n-2)</code></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_step_4_code_explanation_and_documentation"><a class="anchor" href="#_step_4_code_explanation_and_documentation"></a>Step 4: Code Explanation and Documentation</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Select a block of code</p>
+</li>
+<li>
+<p>Use Continue.dev to explain it:</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p><strong>Original code:</strong></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-python hljs" data-lang="python">@app.route('/predict', methods=['POST'])
+def predict():
+    data = request.get_json()
+    features = np.array(data['features']).reshape(1, -1)
+    prediction = model.predict(features)
+    return jsonify({'prediction': prediction.tolist()})</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Prompt:</strong> "Explain this Flask endpoint"</p>
+</div>
+<div class="paragraph">
+<p><strong>AI Response:</strong></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-none hljs">This Flask route handler creates a POST endpoint at '/predict' that:
+1. Accepts JSON data containing a 'features' array
+2. Reshapes the features into a 2D numpy array (1 row, N columns) suitable for model input
+3. Passes the features to a machine learning model for prediction
+4. Returns the prediction as JSON
+
+This is a common pattern for serving ML models via REST APIs.</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_step_5_build_a_custom_code_assistant"><a class="anchor" href="#_step_5_build_a_custom_code_assistant"></a>Step 5: Build a Custom Code Assistant</h3>
+<div class="paragraph">
+<p>Create a custom code assistant that uses MaaS:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-python hljs" data-lang="python"># code_assistant.py
+import os
+from openai import OpenAI
+
+class CodeAssistant:
+    def __init__(self):
+        self.client = OpenAI(
+            api_key=os.environ.get("MAAS_API_KEY"),
+            base_url=os.environ.get("MAAS_BASE_URL")
+        )
+        self.conversation_history = []
+
+    def ask(self, question, code_context=""):
+        """Ask a coding question with optional code context."""
+        messages = [
+            {
+                "role": "system",
+                "content": "You are an expert programmer assistant. Provide clear, concise answers with code examples when relevant."
+            }
+        ]
+
+        # Add conversation history
+        messages.extend(self.conversation_history)
+
+        # Add current question with code context
+        user_message = question
+        if code_context:
+            user_message = f"Given this code:\n```\n{code_context}\n```\n\n{question}"
+
+        messages.append({"role": "user", "content": user_message})
+
+        # Get response from MaaS
+        response = self.client.chat.completions.create(
+            model="nemotron-3-nano",
+            messages=messages,
+            max_tokens=500,
+            temperature=0.3
+        )
+
+        assistant_message = response.choices[0].message.content
+
+        # Update conversation history
+        self.conversation_history.append({"role": "user", "content": user_message})
+        self.conversation_history.append({"role": "assistant", "content": assistant_message})
+
+        return assistant_message
+
+# Example usage
+if __name__ == "__main__":
+    assistant = CodeAssistant()
+
+    # Example 1: Code explanation
+    code = """
+    def quicksort(arr):
+        if len(arr) &lt;= 1:
+            return arr
+        pivot = arr[len(arr) // 2]
+        left = [x for x in arr if x &lt; pivot]
+        middle = [x for x in arr if x == pivot]
+        right = [x for x in arr if x &gt; pivot]
+        return quicksort(left) + middle + quicksort(right)
+    """
+
+    print("Q: Explain this quicksort implementation")
+    print(assistant.ask("Explain this implementation", code))
+    print()
+
+    # Example 2: Code improvement
+    print("Q: How can I optimize this for large arrays?")
+    print(assistant.ask("How can I optimize this for large arrays?"))
+    print()
+
+    # Example 3: Generate tests
+    print("Q: Generate unit tests for this function")
+    print(assistant.ask("Generate pytest unit tests"))</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Run the assistant:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-console hljs" data-lang="console">$ python code_assistant.py</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Expected output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">Q: Explain this quicksort implementation
+This is a functional implementation of the quicksort algorithm using list comprehensions:
+1. Base case: Arrays of 0 or 1 elements are already sorted
+2. Pivot selection: Uses the middle element
+3. Partitioning: Splits array into three parts (less than, equal to, greater than pivot)
+4. Recursion: Recursively sorts left and right partitions
+5. Concatenation: Combines sorted partitions
+
+Time complexity: O(n log n) average, O(n²) worst case
+Space complexity: O(n) due to list copies
+
+Q: How can I optimize this for large arrays?
+For large arrays, consider:
+1. Use in-place partitioning to reduce memory usage
+2. Switch to insertion sort for small subarrays (&lt; 10 elements)
+3. Use random pivot selection to avoid worst-case on sorted data
+4. Implement iterative version using a stack to avoid recursion overhead
+5. Use parallel processing for independent partition sorting
+
+Q: Generate unit tests for this function
+[Generates pytest test cases...]</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_step_6_integrate_with_jupyter_notebooks"><a class="anchor" href="#_step_6_integrate_with_jupyter_notebooks"></a>Step 6: Integrate with Jupyter Notebooks</h3>
+<div class="paragraph">
+<p>Use MaaS in Jupyter notebooks for data science workflows:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-python hljs" data-lang="python"># In Jupyter notebook cell
+import os
+from openai import OpenAI
+
+client = OpenAI(
+    api_key=os.environ["MAAS_API_KEY"],
+    base_url=os.environ["MAAS_BASE_URL"]
+)
+
+def explain_code_cell(code):
+    """Explain a Jupyter code cell using MaaS."""
+    response = client.chat.completions.create(
+        model="nemotron-3-nano",
+        messages=[
+            {"role": "system", "content": "You are a data science expert. Explain code concisely."},
+            {"role": "user", "content": f"Explain this code:\n```python\n{code}\n```"}
+        ],
+        max_tokens=300
+    )
+    return response.choices[0].message.content
+
+# Use in notebook
+code = """
+df['log_price'] = np.log1p(df['price'])
+df['price_per_sqft'] = df['price'] / df['square_feet']
+df = pd.get_dummies(df, columns=['neighborhood'], drop_first=True)
+"""
+
+print(explain_code_cell(code))</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_step_7_build_a_vs_code_extension"><a class="anchor" href="#_step_7_build_a_vs_code_extension"></a>Step 7: Build a VS Code Extension</h3>
+<div class="paragraph">
+<p>Create a simple VS Code extension that uses MaaS:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-javascript hljs" data-lang="javascript">// extension.js
+const vscode = require('vscode');
+const axios = require('axios');
+
+async function getMaasCompletion(prompt) {
+    const apiKey = process.env.MAAS_API_KEY;
+    const baseUrl = process.env.MAAS_BASE_URL;
+
+    const response = await axios.post(
+        `${baseUrl}/chat/completions`,
+        {
+            model: 'nemotron-3-nano',
+            messages: [
+                { role: 'user', content: prompt }
+            ],
+            max_tokens: 500
+        },
+        {
+            headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Type': 'application/json'
+            }
+        }
+    );
+
+    return response.data.choices[0].message.content;
+}
+
+function activate(context) {
+    let disposable = vscode.commands.registerCommand(
+        'maas-assistant.explain',
+        async function () {
+            const editor = vscode.window.activeTextEditor;
+            if (!editor) return;
+
+            const selection = editor.selection;
+            const text = editor.document.getText(selection);
+
+            if (!text) {
+                vscode.window.showWarningMessage('No code selected');
+                return;
+            }
+
+            const explanation = await getMaasCompletion(
+                `Explain this code:\n\`\`\`\n${text}\n\`\`\``
+            );
+
+            vscode.window.showInformationMessage(explanation);
+        }
+    );
+
+    context.subscriptions.push(disposable);
+}
+
+module.exports = { activate };</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_step_8_create_the_capstone_diagram"><a class="anchor" href="#_step_8_create_the_capstone_diagram"></a>Step 8: Create the Capstone Diagram</h3>
+<div class="imageblock unresolved">
+<div class="content">
+<img src="capstone-maas-ecosystem.png" alt="Complete MaaS Ecosystem">
+</div>
+</div>
+<div class="paragraph">
+<p>The complete MaaS ecosystem now includes:</p>
+</div>
+<div class="paragraph">
+<p><strong>Layer 1: GPU Foundation</strong>
+* NVIDIA GPU Operator stack
+* Node Feature Discovery
+* Hardware acceleration</p>
+</div>
+<div class="paragraph">
+<p><strong>Layer 2: Model Serving</strong>
+* llm-d distributed inference
+* vLLM execution engine
+* KServe orchestration</p>
+</div>
+<div class="paragraph">
+<p><strong>Layer 3: Governance &amp; Observability</strong>
+* Kuadrant (Authorino + Limitador)
+* Prometheus metrics
+* Grafana dashboards
+* Service tier enforcement</p>
+</div>
+<div class="paragraph">
+<p><strong>Layer 4: Developer Integration (NEW)</strong>
+* OpenShift DevSpaces with AI assistant
+* OpenAI-compatible REST APIs
+* Jupyter notebook integration
+* IDE extensions and code completion
+* Agentic workflows</p>
+</div>
+<div class="paragraph">
+<p>You have successfully integrated MaaS into the complete developer workflow!</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_integration_patterns_summary"><a class="anchor" href="#_integration_patterns_summary"></a>Integration Patterns Summary</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>| Integration Type | Use Case | Complexity |
+|-----------------|----------|------------|
+| <strong>Continue.dev</strong> | Code completion in IDE | Low |
+| <strong>Jupyter Notebooks</strong> | Data science workflows | Low |
+| <strong>Custom CLI</strong> | Terminal-based assistance | Medium |
+| <strong>VS Code Extension</strong> | Custom IDE integration | Medium |
+| <strong>API Gateway</strong> | Multi-model routing | High |
+| <strong>Agentic Workflows</strong> | Tool-using AI agents | High |</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_whats_next"><a class="anchor" href="#_whats_next"></a>What&#8217;s Next</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Congratulations! You&#8217;ve completed the Red Hat AI Models-as-a-Service training. You now have the skills to:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Design and deploy MaaS architectures</p>
+</li>
+<li>
+<p>Configure governance tiers and access controls</p>
+</li>
+<li>
+<p>Select and deploy models using llm-d</p>
+</li>
+<li>
+<p>Monitor performance and establish chargeback models</p>
+</li>
+<li>
+<p>Integrate MaaS into developer workflows</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><strong>Next Steps:</strong>
+* Deploy MaaS in your production environment
+* Explore advanced features like canary deployments
+* Integrate with existing CI/CD pipelines
+* Build custom agentic applications
+* Join the Red Hat OpenShift AI community</p>
+</div>
+<div class="paragraph">
+<p>Thank you for completing this course!</p>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="s2-api-consumption-lab.html">Lab: Consuming the OpenAI-Compatible API</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>
