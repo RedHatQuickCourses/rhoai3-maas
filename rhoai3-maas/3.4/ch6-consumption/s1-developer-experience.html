@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>The Developer Experience :: Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</title>
+    <link rel="prev" href="index.html">
+    <link rel="next" href="s2-api-consumption-lab.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/REPLACEREPONAME/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="rhoai3-maas" data-version="3.4">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Introduction &amp; Value</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../ch1-architecture/index.html">Design a MaaS Architecture</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../ch1-architecture/s1-gpu-silo.html">Solving the GPU Silo Crisis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../ch1-architecture/s2-architecture-stack.html">The Core Architecture Stack and GPU Strategy</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../ch1-architecture/s3-validation-quiz.html">Quiz: Architecture Validation</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../ch2-configuration/index.html">Configure the MaaS Platform and Ecosystem</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../ch2-configuration/s1-ecosystem-operators.html">Hardware Acceleration and Ecosystem Operators</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../ch2-configuration/s2-enable-maas-lab.html">Lab: Enabling the MaaS Component</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../ch2-configuration/s3-governance-tiers-lab.html">Lab: Defining Governance Tiers</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../ch3-model-selection/index.html">Formulate a Model Selection Strategy</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../ch3-model-selection/s1-model-architecture.html">Understanding Model Architecture: Dense vs. Sparse</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../ch3-model-selection/s2-capability-assessment.html">Assessing Model Capabilities: Reasoning vs. Non-Reasoning</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../ch3-model-selection/s3-selection-criteria-quiz.html">Quiz: Model Selection Criteria</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../ch4-deployment/index.html">Deploy Models for MaaS</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../ch4-deployment/s1-distributed-inference.html">Distributed Inference with llm-d and vLLM</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../ch4-deployment/s2-publish-model-lab.html">Lab: Publishing and Instrumenting a Model</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../ch4-deployment/s3-lifecycle-management-lab.html">Lab: Lifecycle Management and GitOps</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../ch5-observability/index.html">Track Metrics and Usage</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../ch5-observability/s1-observability-stack.html">The MaaS Observability Stack</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../ch5-observability/s2-metrics-visualization-lab.html">Lab: Visualizing Token and Request Data</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="index.html">Consume MaaS Endpoints and Agentic Integrations</a>
+<ul class="nav-list">
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="s1-developer-experience.html">The Developer Experience</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="s2-api-consumption-lab.html">Lab: Consuming the OpenAI-Compatible API</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="s3-agentic-integration-lab.html">Lab: Agentic Integration with OpenShift DevSpaces</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</span>
+    <span class="version">3.4</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">3.4</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</a></li>
+    <li><a href="index.html">Consume MaaS Endpoints and Agentic Integrations</a></li>
+    <li><a href="s1-developer-experience.html">The Developer Experience</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">The Developer Experience</h1>
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p><em>Estimated reading time: <strong>15 minutes</strong>.</em></p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">Objective</dt>
+<dd>
+<p>Navigate the "Models as a service" tab in the OpenShift AI dashboard to generate single-view API keys. Explain the OpenAI-compatible API and standardized error codes like 401 (unauthorized), 403 (forbidden), and 429 (rate limited). Understand the developer experience for consuming MaaS endpoints.</p>
+</dd>
+</dl>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+Not started yet.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_the_maas_developer_interface"><a class="anchor" href="#_the_maas_developer_interface"></a>The MaaS Developer Interface</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>MaaS provides a streamlined developer experience through the OpenShift AI dashboard&#8217;s "Gen AI Studio" menu.</p>
+</div>
+<div class="sect2">
+<h3 id="_accessing_the_dashboard"><a class="anchor" href="#_accessing_the_dashboard"></a>Accessing the Dashboard</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Log in to OpenShift AI dashboard</p>
+</li>
+<li>
+<p>Navigate to <strong>Gen AI Studio</strong> → <strong>Models as a Service</strong></p>
+</li>
+<li>
+<p>View available models published to your service tier</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>The dashboard shows:
+* <strong>Available Models</strong>: Models you have access to based on your tier
+* <strong>Model Details</strong>: Architecture, context length, capabilities
+* <strong>API Endpoints</strong>: Base URLs for model inference
+* <strong>API Keys</strong>: Generate and manage authentication tokens
+* <strong>Usage Metrics</strong>: Token consumption and request counts</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_ai_available_assets_catalog"><a class="anchor" href="#_ai_available_assets_catalog"></a>AI Available Assets Catalog</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Models published as MaaS endpoints appear in the centralized <strong>AI Available Assets</strong> catalog:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Global Visibility</strong>: All published models visible across projects</p>
+</li>
+<li>
+<p><strong>Centralized Discovery</strong>: Single location for model catalog</p>
+</li>
+<li>
+<p><strong>Tier-Based Access</strong>: Only shows models available to your tier</p>
+</li>
+<li>
+<p><strong>Metadata</strong>: Model cards with capabilities, limitations, and examples</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_api_key_generation"><a class="anchor" href="#_api_key_generation"></a>API Key Generation</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Developers generate API keys directly from the dashboard:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Navigate to <strong>Gen AI Studio</strong> → <strong>Models as a Service</strong> → <strong>API Keys</strong></p>
+</li>
+<li>
+<p>Click <strong>Generate API Key</strong></p>
+</li>
+<li>
+<p>Provide a descriptive name (e.g., "production-app-key", "dev-testing")</p>
+</li>
+<li>
+<p>Select scope (optional):</p>
+<div class="ulist">
+<ul>
+<li>
+<p>All models in tier</p>
+</li>
+<li>
+<p>Specific models only</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Set expiration (optional):</p>
+<div class="ulist">
+<ul>
+<li>
+<p>30 days, 90 days, 1 year, or never expires</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Copy the generated key (shown only once!)</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p><strong>API Key Format:</strong></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-none hljs">maas_ABC123XYZ789_DEF456UVW012</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Security Best Practices:</strong>
+* Store keys in environment variables or secret managers
+* Use different keys for dev/staging/prod
+* Rotate keys regularly (every 90 days recommended)
+* Revoke compromised keys immediately
+* Never commit keys to Git repositories</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_openai_compatible_api"><a class="anchor" href="#_openai_compatible_api"></a>OpenAI-Compatible API</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>MaaS endpoints use the OpenAI API specification for maximum compatibility:</p>
+</div>
+<div class="paragraph">
+<p><strong>Base URL:</strong></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-none hljs">https://maas.apps.&lt;cluster-domain&gt;/v1/</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Endpoints:</strong>
+* <code>GET /v1/models</code> - List available models
+* <code>POST /v1/chat/completions</code> - Chat completions
+* <code>POST /v1/completions</code> - Text completions (legacy)
+* <code>POST /v1/embeddings</code> - Generate embeddings (if supported)</p>
+</div>
+<div class="paragraph">
+<p><strong>Standard Request Format:</strong></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">{
+  "model": "nemotron-3-nano",
+  "messages": [
+    {"role": "system", "content": "You are a helpful assistant."},
+    {"role": "user", "content": "Explain MaaS briefly."}
+  ],
+  "max_tokens": 100,
+  "temperature": 0.7,
+  "stream": false
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Standard Response Format:</strong></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">{
+  "id": "chatcmpl-abc123",
+  "object": "chat.completion",
+  "created": 1704067200,
+  "model": "nemotron-3-nano",
+  "choices": [{
+    "index": 0,
+    "message": {
+      "role": "assistant",
+      "content": "MaaS provides governed access to AI models..."
+    },
+    "finish_reason": "stop"
+  }],
+  "usage": {
+    "prompt_tokens": 25,
+    "completion_tokens": 42,
+    "total_tokens": 67
+  }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_http_status_codes_and_error_handling"><a class="anchor" href="#_http_status_codes_and_error_handling"></a>HTTP Status Codes and Error Handling</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>MaaS uses standard HTTP status codes:</p>
+</div>
+<div class="paragraph">
+<p>| Code | Meaning | Cause | Action |
+|------|---------|-------|--------|
+| <strong>200</strong> | OK | Request succeeded | Process response |
+| <strong>401</strong> | Unauthorized | Invalid or missing API key | Check Bearer token |
+| <strong>403</strong> | Forbidden | Model not in your tier | Upgrade tier or request access |
+| <strong>429</strong> | Too Many Requests | Rate limit exceeded | Implement backoff, upgrade tier |
+| <strong>500</strong> | Internal Server Error | Model server error | Retry with exponential backoff |
+| <strong>503</strong> | Service Unavailable | Model loading or scaling | Retry after delay |</p>
+</div>
+<div class="paragraph">
+<p><strong>Error Response Format:</strong></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">{
+  "error": {
+    "message": "Rate limit exceeded for tier 'free'",
+    "type": "rate_limit_exceeded",
+    "code": 429,
+    "details": {
+      "limit": "10 requests/minute",
+      "current": "12 requests/minute",
+      "reset_at": "2024-04-02T12:35:00Z"
+    }
+  }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_rate_limit_headers"><a class="anchor" href="#_rate_limit_headers"></a>Rate Limit Headers</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Responses include rate limit information:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-none hljs">X-RateLimit-Limit: 100
+X-RateLimit-Remaining: 87
+X-RateLimit-Reset: 1704067260
+X-RateLimit-Tier: premium</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Developers can check remaining quota before making requests.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_language_sdk_support"><a class="anchor" href="#_language_sdk_support"></a>Language SDK Support</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>MaaS is compatible with OpenAI SDKs:</p>
+</div>
+<div class="paragraph">
+<p><strong>Python (openai library):</strong></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-python hljs" data-lang="python">from openai import OpenAI
+
+client = OpenAI(
+    api_key="maas_ABC123...",
+    base_url="https://maas.apps.cluster.example.com/v1"
+)
+
+response = client.chat.completions.create(
+    model="nemotron-3-nano",
+    messages=[{"role": "user", "content": "Hello!"}]
+)</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>JavaScript/TypeScript:</strong></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-javascript hljs" data-lang="javascript">import OpenAI from 'openai';
+
+const client = new OpenAI({
+  apiKey: process.env.MAAS_API_KEY,
+  baseURL: 'https://maas.apps.cluster.example.com/v1'
+});
+
+const response = await client.chat.completions.create({
+  model: 'nemotron-3-nano',
+  messages: [{ role: 'user', content: 'Hello!' }]
+});</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>cURL:</strong></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">curl -X POST https://maas.apps.cluster.example.com/v1/chat/completions \
+  -H "Authorization: Bearer maas_ABC123..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "nemotron-3-nano",
+    "messages": [{"role": "user", "content": "Hello!"}]
+  }'</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_whats_next"><a class="anchor" href="#_whats_next"></a>What&#8217;s Next</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Now that you understand the developer interface, the next lab demonstrates hands-on consumption of MaaS endpoints using curl and Python, including authentication, error handling, and token management.</p>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="index.html">Consume MaaS Endpoints and Agentic Integrations</a></span>
+  <span class="next"><a href="s2-api-consumption-lab.html">Lab: Consuming the OpenAI-Compatible API</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

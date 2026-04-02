@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Lab: Consuming the OpenAI-Compatible API :: Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</title>
+    <link rel="prev" href="s1-developer-experience.html">
+    <link rel="next" href="s3-agentic-integration-lab.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/REPLACEREPONAME/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="rhoai3-maas" data-version="3.4">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Introduction &amp; Value</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../ch1-architecture/index.html">Design a MaaS Architecture</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../ch1-architecture/s1-gpu-silo.html">Solving the GPU Silo Crisis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../ch1-architecture/s2-architecture-stack.html">The Core Architecture Stack and GPU Strategy</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../ch1-architecture/s3-validation-quiz.html">Quiz: Architecture Validation</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../ch2-configuration/index.html">Configure the MaaS Platform and Ecosystem</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../ch2-configuration/s1-ecosystem-operators.html">Hardware Acceleration and Ecosystem Operators</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../ch2-configuration/s2-enable-maas-lab.html">Lab: Enabling the MaaS Component</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../ch2-configuration/s3-governance-tiers-lab.html">Lab: Defining Governance Tiers</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../ch3-model-selection/index.html">Formulate a Model Selection Strategy</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../ch3-model-selection/s1-model-architecture.html">Understanding Model Architecture: Dense vs. Sparse</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../ch3-model-selection/s2-capability-assessment.html">Assessing Model Capabilities: Reasoning vs. Non-Reasoning</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../ch3-model-selection/s3-selection-criteria-quiz.html">Quiz: Model Selection Criteria</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../ch4-deployment/index.html">Deploy Models for MaaS</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../ch4-deployment/s1-distributed-inference.html">Distributed Inference with llm-d and vLLM</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../ch4-deployment/s2-publish-model-lab.html">Lab: Publishing and Instrumenting a Model</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../ch4-deployment/s3-lifecycle-management-lab.html">Lab: Lifecycle Management and GitOps</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../ch5-observability/index.html">Track Metrics and Usage</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../ch5-observability/s1-observability-stack.html">The MaaS Observability Stack</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../ch5-observability/s2-metrics-visualization-lab.html">Lab: Visualizing Token and Request Data</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="index.html">Consume MaaS Endpoints and Agentic Integrations</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="s1-developer-experience.html">The Developer Experience</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="s2-api-consumption-lab.html">Lab: Consuming the OpenAI-Compatible API</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="s3-agentic-integration-lab.html">Lab: Agentic Integration with OpenShift DevSpaces</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</span>
+    <span class="version">3.4</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">3.4</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</a></li>
+    <li><a href="index.html">Consume MaaS Endpoints and Agentic Integrations</a></li>
+    <li><a href="s2-api-consumption-lab.html">Lab: Consuming the OpenAI-Compatible API</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Lab: Consuming the OpenAI-Compatible API</h1>
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p><em>Estimated reading time: <strong>25 minutes</strong>.</em></p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">Objective</dt>
+<dd>
+<p>Use curl and Python to interact with the <code>/v1/chat/completions</code> endpoint using Bearer token authentication. Read response headers to identify remaining tokens and experiment with setting max tokens. Test API key authentication and rate limiting behavior.</p>
+</dd>
+</dl>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+Not started yet.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_before_you_begin"><a class="anchor" href="#_before_you_begin"></a>Before you begin</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Ensure you have:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>An API key generated from the MaaS dashboard</p>
+</li>
+<li>
+<p>The MaaS base URL for your cluster</p>
+</li>
+<li>
+<p>curl and Python 3.8+ installed</p>
+</li>
+<li>
+<p>Access to a model published as a MaaS endpoint</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_instructions"><a class="anchor" href="#_instructions"></a>Instructions</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_step_1_list_available_models"><a class="anchor" href="#_step_1_list_available_models"></a>Step 1: List Available Models</h3>
+<div class="paragraph">
+<p>First, discover which models you have access to:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-console hljs" data-lang="console">$ export MAAS_API_KEY="maas_ABC123XYZ789..."
+$ export MAAS_BASE_URL="https://maas.apps.cluster.example.com/v1"
+
+$ curl -H "Authorization: Bearer $MAAS_API_KEY" \
+  $MAAS_BASE_URL/models</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Expected response:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">{
+  "object": "list",
+  "data": [
+    {
+      "id": "nemotron-3-nano",
+      "object": "model",
+      "created": 1704067200,
+      "owned_by": "maas-platform",
+      "permission": ["chat.completions"],
+      "context_length": 8192
+    }
+  ]
+}</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_step_2_basic_chat_completion_with_curl"><a class="anchor" href="#_step_2_basic_chat_completion_with_curl"></a>Step 2: Basic Chat Completion with curl</h3>
+<div class="paragraph">
+<p>Make a simple chat completion request:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-console hljs" data-lang="console">$ curl -X POST $MAAS_BASE_URL/chat/completions \
+  -H "Authorization: Bearer $MAAS_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "nemotron-3-nano",
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a helpful AI assistant specializing in Kubernetes."
+      },
+      {
+        "role": "user",
+        "content": "What is a StatefulSet?"
+      }
+    ],
+    "max_tokens": 150,
+    "temperature": 0.7
+  }'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Expected response:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">{
+  "id": "chatcmpl-xyz789",
+  "object": "chat.completion",
+  "created": 1704067260,
+  "model": "nemotron-3-nano",
+  "choices": [{
+    "index": 0,
+    "message": {
+      "role": "assistant",
+      "content": "A StatefulSet is a Kubernetes workload controller that manages stateful applications. Unlike Deployments, StatefulSets maintain a sticky identity for each pod, provide ordered deployment and scaling, and use persistent volumes that follow the pod lifecycle. Common use cases include databases, distributed systems, and applications requiring stable network identifiers."
+    },
+    "finish_reason": "stop"
+  }],
+  "usage": {
+    "prompt_tokens": 28,
+    "completion_tokens": 68,
+    "total_tokens": 96
+  }
+}</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_step_3_check_rate_limit_headers"><a class="anchor" href="#_step_3_check_rate_limit_headers"></a>Step 3: Check Rate Limit Headers</h3>
+<div class="paragraph">
+<p>Inspect response headers to monitor rate limits:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-console hljs" data-lang="console">$ curl -i -X POST $MAAS_BASE_URL/chat/completions \
+  -H "Authorization: Bearer $MAAS_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "nemotron-3-nano",
+    "messages": [{"role": "user", "content": "Hello!"}]
+  }'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Look for these headers in the response:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-http hljs" data-lang="http">HTTP/1.1 200 OK
+X-RateLimit-Limit: 100
+X-RateLimit-Remaining: 99
+X-RateLimit-Reset: 1704067320
+X-RateLimit-Tier: premium
+Content-Type: application/json</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_step_4_python_client_with_error_handling"><a class="anchor" href="#_step_4_python_client_with_error_handling"></a>Step 4: Python Client with Error Handling</h3>
+<div class="paragraph">
+<p>Create a Python script with proper error handling:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-python hljs" data-lang="python">import os
+import time
+from openai import OpenAI, RateLimitError, AuthenticationError
+
+# Initialize client
+client = OpenAI(
+    api_key=os.environ.get("MAAS_API_KEY"),
+    base_url=os.environ.get("MAAS_BASE_URL")
+)
+
+def chat_with_retry(prompt, max_retries=3):
+    """Make a chat completion request with retry logic."""
+    for attempt in range(max_retries):
+        try:
+            response = client.chat.completions.create(
+                model="nemotron-3-nano",
+                messages=[
+                    {"role": "user", "content": prompt}
+                ],
+                max_tokens=200,
+                temperature=0.7
+            )
+            return response
+
+        except RateLimitError as e:
+            if attempt &lt; max_retries - 1:
+                wait_time = 2 ** attempt  # Exponential backoff
+                print(f"Rate limit hit. Waiting {wait_time}s before retry...")
+                time.sleep(wait_time)
+            else:
+                print("Max retries reached. Rate limit still in effect.")
+                raise
+
+        except AuthenticationError:
+            print("Authentication failed. Check your API key.")
+            raise
+
+        except Exception as e:
+            print(f"Unexpected error: {e}")
+            raise
+
+# Example usage
+if __name__ == "__main__":
+    response = chat_with_retry("Explain Kubernetes Operators briefly.")
+
+    print("Response:", response.choices[0].message.content)
+    print(f"\nTokens used: {response.usage.total_tokens}")
+    print(f"  - Prompt: {response.usage.prompt_tokens}")
+    print(f"  - Completion: {response.usage.completion_tokens}")</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Run the script:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-console hljs" data-lang="console">$ python chat_client.py
+Response: Kubernetes Operators are software extensions that use custom resources to manage applications and their components. They automate complex operational tasks like deployment, scaling, backup, and recovery by encoding domain-specific knowledge into code.
+
+Tokens used: 58
+  - Prompt: 9
+  - Completion: 49</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_step_5_test_token_limits"><a class="anchor" href="#_step_5_test_token_limits"></a>Step 5: Test Token Limits</h3>
+<div class="paragraph">
+<p>Experiment with different <code>max_tokens</code> values:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-python hljs" data-lang="python"># Short response
+response_short = client.chat.completions.create(
+    model="nemotron-3-nano",
+    messages=[{"role": "user", "content": "What is Kubernetes?"}],
+    max_tokens=20  # Limit to 20 tokens
+)
+print("Short:", response_short.choices[0].message.content)
+
+# Long response
+response_long = client.chat.completions.create(
+    model="nemotron-3-nano",
+    messages=[{"role": "user", "content": "What is Kubernetes?"}],
+    max_tokens=200  # Allow up to 200 tokens
+)
+print("Long:", response_long.choices[0].message.content)</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">Short: Kubernetes is a container orchestration platform for automating deployment
+Long: Kubernetes is an open-source container orchestration platform that automates the deployment, scaling, and management of containerized applications. It groups containers into logical units called pods, provides service discovery and load balancing, handles storage orchestration, and enables self-healing through automatic restarts and rescheduling. Originally developed by Google, it's now maintained by the Cloud Native Computing Foundation.</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_step_6_monitor_response_headers_with_python"><a class="anchor" href="#_step_6_monitor_response_headers_with_python"></a>Step 6: Monitor Response Headers with Python</h3>
+<div class="paragraph">
+<p>Access rate limit headers programmatically:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-python hljs" data-lang="python">import httpx
+
+def get_rate_limit_info():
+    """Fetch and display rate limit information."""
+    headers = {
+        "Authorization": f"Bearer {os.environ['MAAS_API_KEY']}",
+        "Content-Type": "application/json"
+    }
+
+    payload = {
+        "model": "nemotron-3-nano",
+        "messages": [{"role": "user", "content": "test"}],
+        "max_tokens": 10
+    }
+
+    response = httpx.post(
+        f"{os.environ['MAAS_BASE_URL']}/chat/completions",
+        json=payload,
+        headers=headers
+    )
+
+    print("Rate Limit Info:")
+    print(f"  Limit: {response.headers.get('X-RateLimit-Limit')}/min")
+    print(f"  Remaining: {response.headers.get('X-RateLimit-Remaining')}")
+    print(f"  Reset at: {response.headers.get('X-RateLimit-Reset')}")
+    print(f"  Tier: {response.headers.get('X-RateLimit-Tier')}")
+
+    return response.json()
+
+result = get_rate_limit_info()</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">Rate Limit Info:
+  Limit: 100/min
+  Remaining: 99
+  Reset at: 1704067380
+  Tier: premium</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_step_7_test_rate_limiting_behavior"><a class="anchor" href="#_step_7_test_rate_limiting_behavior"></a>Step 7: Test Rate Limiting Behavior</h3>
+<div class="paragraph">
+<p>Intentionally trigger rate limiting to see error handling:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-python hljs" data-lang="python">def test_rate_limiting():
+    """Test rate limit by making rapid requests."""
+    print("Testing rate limiting (making rapid requests)...")
+
+    for i in range(150):  # Exceed premium tier limit of 100/min
+        try:
+            response = client.chat.completions.create(
+                model="nemotron-3-nano",
+                messages=[{"role": "user", "content": "test"}],
+                max_tokens=5
+            )
+            print(f"Request {i+1}: Success")
+
+        except RateLimitError as e:
+            print(f"Request {i+1}: RATE LIMITED")
+            print(f"Error details: {e}")
+
+            # Parse reset time from error
+            if hasattr(e, 'response') and e.response:
+                reset_time = e.response.headers.get('X-RateLimit-Reset')
+                print(f"Rate limit resets at: {reset_time}")
+
+            break
+
+test_rate_limiting()</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Expected output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-text hljs" data-lang="text">Testing rate limiting (making rapid requests)...
+Request 1: Success
+Request 2: Success
+...
+Request 100: Success
+Request 101: RATE LIMITED
+Error details: Rate limit exceeded for tier 'premium'. Limit: 100 requests/minute.
+Rate limit resets at: 1704067440</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_step_8_streaming_responses"><a class="anchor" href="#_step_8_streaming_responses"></a>Step 8: Streaming Responses</h3>
+<div class="paragraph">
+<p>Test streaming for real-time token generation:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-python hljs" data-lang="python">def stream_chat(prompt):
+    """Stream chat completion tokens as they're generated."""
+    response = client.chat.completions.create(
+        model="nemotron-3-nano",
+        messages=[{"role": "user", "content": prompt}],
+        max_tokens=150,
+        stream=True  # Enable streaming
+    )
+
+    print("Streaming response:")
+    for chunk in response:
+        if chunk.choices[0].delta.content:
+            print(chunk.choices[0].delta.content, end='', flush=True)
+    print()  # Newline after streaming completes
+
+stream_chat("Explain the benefits of MaaS in three bullet points.")</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You have successfully consumed MaaS APIs using curl and Python!</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_best_practices_summary"><a class="anchor" href="#_best_practices_summary"></a>Best Practices Summary</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Always handle rate limits</strong> with exponential backoff</p>
+</li>
+<li>
+<p><strong>Monitor token usage</strong> to optimize costs</p>
+</li>
+<li>
+<p><strong>Use environment variables</strong> for API keys</p>
+</li>
+<li>
+<p><strong>Implement error handling</strong> for 401, 403, 429, 500, 503</p>
+</li>
+<li>
+<p><strong>Check response headers</strong> for rate limit information</p>
+</li>
+<li>
+<p><strong>Set appropriate max_tokens</strong> to control costs and latency</p>
+</li>
+<li>
+<p><strong>Use streaming</strong> for better user experience in interactive apps</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_whats_next"><a class="anchor" href="#_whats_next"></a>What&#8217;s Next</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The final lab demonstrates how to integrate the MaaS endpoint with OpenShift DevSpaces to create an AI-powered code assistant, showcasing agentic integration patterns.</p>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="s1-developer-experience.html">The Developer Experience</a></span>
+  <span class="next"><a href="s3-agentic-integration-lab.html">Lab: Agentic Integration with OpenShift DevSpaces</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

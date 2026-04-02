@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Quiz: Model Selection Criteria :: Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</title>
+    <link rel="prev" href="s2-capability-assessment.html">
+    <link rel="next" href="../ch4-deployment/index.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/REPLACEREPONAME/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="rhoai3-maas" data-version="3.4">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Introduction &amp; Value</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../ch1-architecture/index.html">Design a MaaS Architecture</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../ch1-architecture/s1-gpu-silo.html">Solving the GPU Silo Crisis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../ch1-architecture/s2-architecture-stack.html">The Core Architecture Stack and GPU Strategy</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../ch1-architecture/s3-validation-quiz.html">Quiz: Architecture Validation</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../ch2-configuration/index.html">Configure the MaaS Platform and Ecosystem</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../ch2-configuration/s1-ecosystem-operators.html">Hardware Acceleration and Ecosystem Operators</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../ch2-configuration/s2-enable-maas-lab.html">Lab: Enabling the MaaS Component</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../ch2-configuration/s3-governance-tiers-lab.html">Lab: Defining Governance Tiers</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="index.html">Formulate a Model Selection Strategy</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="s1-model-architecture.html">Understanding Model Architecture: Dense vs. Sparse</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="s2-capability-assessment.html">Assessing Model Capabilities: Reasoning vs. Non-Reasoning</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="s3-selection-criteria-quiz.html">Quiz: Model Selection Criteria</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../ch4-deployment/index.html">Deploy Models for MaaS</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../ch4-deployment/s1-distributed-inference.html">Distributed Inference with llm-d and vLLM</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../ch4-deployment/s2-publish-model-lab.html">Lab: Publishing and Instrumenting a Model</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../ch4-deployment/s3-lifecycle-management-lab.html">Lab: Lifecycle Management and GitOps</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../ch5-observability/index.html">Track Metrics and Usage</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../ch5-observability/s1-observability-stack.html">The MaaS Observability Stack</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../ch5-observability/s2-metrics-visualization-lab.html">Lab: Visualizing Token and Request Data</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../ch6-consumption/index.html">Consume MaaS Endpoints and Agentic Integrations</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../ch6-consumption/s1-developer-experience.html">The Developer Experience</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../ch6-consumption/s2-api-consumption-lab.html">Lab: Consuming the OpenAI-Compatible API</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../ch6-consumption/s3-agentic-integration-lab.html">Lab: Agentic Integration with OpenShift DevSpaces</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</span>
+    <span class="version">3.4</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">3.4</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</a></li>
+    <li><a href="index.html">Formulate a Model Selection Strategy</a></li>
+    <li><a href="s3-selection-criteria-quiz.html">Quiz: Model Selection Criteria</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Quiz: Model Selection Criteria</h1>
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p><em>Estimated reading time: <strong>10 minutes</strong>.</em></p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">Objective</dt>
+<dd>
+<p>Test understanding of model selection criteria through a knowledge check covering context length limitations, tool calling considerations, and choosing the right model type for specific workloads.</p>
+</dd>
+</dl>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_knowledge_check"><a class="anchor" href="#_knowledge_check"></a>Knowledge Check</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Answer the following questions to test your understanding of model selection:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>Which model architecture typically provides higher throughput per GPU?</strong></p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>Dense models (all parameters active)</p>
+</li>
+<li>
+<p>Sparse models (Mixture of Experts)</p>
+</li>
+<li>
+<p>Both provide identical throughput</p>
+</li>
+<li>
+<p>It depends only on batch size</p>
+</li>
+</ol>
+</div>
+</li>
+<li>
+<p><strong>What is the primary advantage of reasoning models?</strong></p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>Faster inference speed</p>
+</li>
+<li>
+<p>Lower cost per query</p>
+</li>
+<li>
+<p>Better performance on complex tasks requiring multi-step thinking</p>
+</li>
+<li>
+<p>Smaller memory footprint</p>
+</li>
+</ol>
+</div>
+</li>
+<li>
+<p><strong>A customer needs a chatbot for simple product recommendations with &lt;5 second response time. Which model type is most appropriate?</strong></p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>Reasoning model (for accuracy)</p>
+</li>
+<li>
+<p>Non-reasoning model (for speed and cost)</p>
+</li>
+<li>
+<p>Sparse Mixture of Experts</p>
+</li>
+<li>
+<p>The largest available model</p>
+</li>
+</ol>
+</div>
+</li>
+<li>
+<p><strong>What is a key consideration when deploying Mixture of Experts models?</strong></p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>They require less total GPU memory than dense models</p>
+</li>
+<li>
+<p>They need complex expert sharding across GPUs</p>
+</li>
+<li>
+<p>They always provide lower latency</p>
+</li>
+<li>
+<p>They cannot be quantized</p>
+</li>
+</ol>
+</div>
+</li>
+<li>
+<p><strong>Context length primarily affects:</strong></p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>Model accuracy only</p>
+</li>
+<li>
+<p>GPU memory requirements for KV cache</p>
+</li>
+<li>
+<p>Model training time</p>
+</li>
+<li>
+<p>Number of parameters in the model</p>
+</li>
+</ol>
+</div>
+</li>
+<li>
+<p><strong>When would you choose a dense model over a sparse model?</strong></p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>When you need maximum throughput</p>
+</li>
+<li>
+<p>When you want predictable latency and simpler deployment</p>
+</li>
+<li>
+<p>When serving millions of requests per day</p>
+</li>
+<li>
+<p>When you have unlimited GPU resources</p>
+</li>
+</ol>
+</div>
+</li>
+<li>
+<p><strong>Tool calling capability in models is most important for:</strong></p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>Simple text generation tasks</p>
+</li>
+<li>
+<p>Agentic workflows that need to interact with external APIs and databases</p>
+</li>
+<li>
+<p>Reducing inference costs</p>
+</li>
+<li>
+<p>Improving model accuracy</p>
+</li>
+</ol>
+</div>
+</li>
+<li>
+<p><strong>If a reasoning model generates 800 tokens per query and a non-reasoning model generates 150 tokens, the reasoning model will:</strong></p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>Have the same total latency</p>
+</li>
+<li>
+<p>Occupy the GPU ~5x longer per request</p>
+</li>
+<li>
+<p>Be faster due to better optimization</p>
+</li>
+<li>
+<p>Use less memory</p>
+</li>
+</ol>
+</div>
+</li>
+</ol>
+</div>
+<div class="sect2">
+<h3 id="_answer_key"><a class="anchor" href="#_answer_key"></a>Answer Key</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>b</strong> - Sparse (MoE) models provide higher throughput by activating fewer parameters per token</p>
+</li>
+<li>
+<p><strong>c</strong> - Reasoning models excel at complex, multi-step tasks despite higher cost</p>
+</li>
+<li>
+<p><strong>b</strong> - Non-reasoning model provides fast, cost-effective responses for simple tasks</p>
+</li>
+<li>
+<p><strong>b</strong> - MoE models require careful expert sharding across GPUs for optimal performance</p>
+</li>
+<li>
+<p><strong>b</strong> - Longer context requires more GPU memory for the KV cache</p>
+</li>
+<li>
+<p><strong>b</strong> - Dense models offer predictable latency and are easier to deploy</p>
+</li>
+<li>
+<p><strong>b</strong> - Tool calling enables models to act as agents interacting with external systems</p>
+</li>
+<li>
+<p><strong>b</strong> - More tokens means longer generation time and GPU occupation</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_whats_next"><a class="anchor" href="#_whats_next"></a>What&#8217;s Next</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Now that you&#8217;ve validated your model selection knowledge, the next chapter teaches you how to deploy models for MaaS using the distributed llm-d runtime, publish them as governed endpoints, and manage their lifecycle.</p>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="s2-capability-assessment.html">Assessing Model Capabilities: Reasoning vs. Non-Reasoning</a></span>
+  <span class="next"><a href="../ch4-deployment/index.html">Deploy Models for MaaS</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

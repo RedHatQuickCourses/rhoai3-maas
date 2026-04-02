@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Lab: Publishing and Instrumenting a Model :: Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</title>
+    <link rel="prev" href="s1-distributed-inference.html">
+    <link rel="next" href="s3-lifecycle-management-lab.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/REPLACEREPONAME/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="rhoai3-maas" data-version="3.4">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Introduction &amp; Value</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../ch1-architecture/index.html">Design a MaaS Architecture</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../ch1-architecture/s1-gpu-silo.html">Solving the GPU Silo Crisis</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../ch1-architecture/s2-architecture-stack.html">The Core Architecture Stack and GPU Strategy</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../ch1-architecture/s3-validation-quiz.html">Quiz: Architecture Validation</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../ch2-configuration/index.html">Configure the MaaS Platform and Ecosystem</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../ch2-configuration/s1-ecosystem-operators.html">Hardware Acceleration and Ecosystem Operators</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../ch2-configuration/s2-enable-maas-lab.html">Lab: Enabling the MaaS Component</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../ch2-configuration/s3-governance-tiers-lab.html">Lab: Defining Governance Tiers</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../ch3-model-selection/index.html">Formulate a Model Selection Strategy</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../ch3-model-selection/s1-model-architecture.html">Understanding Model Architecture: Dense vs. Sparse</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../ch3-model-selection/s2-capability-assessment.html">Assessing Model Capabilities: Reasoning vs. Non-Reasoning</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../ch3-model-selection/s3-selection-criteria-quiz.html">Quiz: Model Selection Criteria</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="index.html">Deploy Models for MaaS</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="s1-distributed-inference.html">Distributed Inference with llm-d and vLLM</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="s2-publish-model-lab.html">Lab: Publishing and Instrumenting a Model</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="s3-lifecycle-management-lab.html">Lab: Lifecycle Management and GitOps</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../ch5-observability/index.html">Track Metrics and Usage</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../ch5-observability/s1-observability-stack.html">The MaaS Observability Stack</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../ch5-observability/s2-metrics-visualization-lab.html">Lab: Visualizing Token and Request Data</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../ch6-consumption/index.html">Consume MaaS Endpoints and Agentic Integrations</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../ch6-consumption/s1-developer-experience.html">The Developer Experience</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../ch6-consumption/s2-api-consumption-lab.html">Lab: Consuming the OpenAI-Compatible API</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../ch6-consumption/s3-agentic-integration-lab.html">Lab: Agentic Integration with OpenShift DevSpaces</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</span>
+    <span class="version">3.4</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">3.4</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">Models as a Service (MaaS) on Red Hat OpenShift AI 3.x</a></li>
+    <li><a href="index.html">Deploy Models for MaaS</a></li>
+    <li><a href="s2-publish-model-lab.html">Lab: Publishing and Instrumenting a Model</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Lab: Publishing and Instrumenting a Model</h1>
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p><em>Estimated reading time: <strong>30 minutes</strong>.</em></p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">Objective</dt>
+<dd>
+<p>Deploy a model (using the NVIDIA-Nemotron-3-Nano-4B-FP8 as the standard lab model) transitioning from single-node vLLM to the distributed llm-d runtime. Select "Publish as MaaS endpoint" to expose the model. Learn how to properly instrument model endpoints and enforce access controls.</p>
+</dd>
+</dl>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+Not started yet.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_before_you_begin"><a class="anchor" href="#_before_you_begin"></a>Before you begin</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Ensure you have:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>MaaS enabled in OpenShift AI</p>
+</li>
+<li>
+<p>GPU nodes with appropriate tolerations</p>
+</li>
+<li>
+<p>Model files stored in S3-compatible storage (MinIO or OpenShift Data Foundation)</p>
+</li>
+<li>
+<p>Access to create LLMInferenceService resources</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_instructions"><a class="anchor" href="#_instructions"></a>Instructions</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_step_1_prepare_model_storage"><a class="anchor" href="#_step_1_prepare_model_storage"></a>Step 1: Prepare Model Storage</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Create a data connection to your S3 storage:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: v1
+kind: Secret
+metadata:
+  name: model-storage-connection
+  namespace: maas-models
+stringData:
+  AWS_ACCESS_KEY_ID: &lt;access-key&gt;
+  AWS_SECRET_ACCESS_KEY: &lt;secret-key&gt;
+  AWS_S3_ENDPOINT: https://s3.example.com
+  AWS_DEFAULT_REGION: us-east-1
+  AWS_S3_BUCKET: models
+type: Opaque</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Upload the NVIDIA-Nemotron-3-Nano-4B-FP8 model to your S3 bucket:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-console hljs" data-lang="console">$ aws s3 cp --recursive /path/to/nemotron-3-nano-4b-fp8/ \
+  s3://models/nemotron-3-nano-4b-fp8/</code></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_step_2_create_llminferenceservice"><a class="anchor" href="#_step_2_create_llminferenceservice"></a>Step 2: Create LLMInferenceService</h3>
+<div class="paragraph">
+<p>Create the LLMInferenceService CR to deploy with llm-d:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: serving.kserve.io/v1alpha1
+kind: LLMInferenceService
+metadata:
+  name: nemotron-3-nano
+  namespace: maas-models
+  annotations:
+    serving.kserve.io/deploymentMode: "ModelMesh"
+    maas.opendatahub.io/publish-as-maas: "true"  # Publish as MaaS endpoint
+    maas.opendatahub.io/service-tier: "premium,enterprise"  # Access control
+spec:
+  model:
+    modelFormat:
+      name: vllm
+    storage:
+      key: model-storage-connection
+      path: nemotron-3-nano-4b-fp8
+  runtime:
+    name: llm-d
+    containers:
+      - name: vllm
+        args:
+          - --model=/mnt/models/nemotron-3-nano-4b-fp8
+          - --dtype=fp8
+          - --max-model-len=8192
+          - --tensor-parallel-size=1
+          - --enable-prefix-caching
+        resources:
+          limits:
+            nvidia.com/gpu: "1"
+          requests:
+            nvidia.com/gpu: "1"
+            memory: "16Gi"
+            cpu: "4"
+  scaling:
+    minReplicas: 2
+    maxReplicas: 4
+    metric: concurrency
+    target: 10
+  monitoring:
+    enabled: true
+    metricsEndpoint: /metrics</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Apply the configuration:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-console hljs" data-lang="console">$ oc apply -f llm-inference-service.yaml</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_step_3_verify_deployment"><a class="anchor" href="#_step_3_verify_deployment"></a>Step 3: Verify Deployment</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Check the LLMInferenceService status:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-console hljs" data-lang="console">$ oc get llminferenceservice nemotron-3-nano
+NAME               READY   URL
+nemotron-3-nano    True    https://maas.apps.cluster.example.com/v1/models/nemotron-3-nano</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Verify worker pods are running:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-console hljs" data-lang="console">$ oc get pods -l serving.kserve.io/inferenceservice=nemotron-3-nano
+NAME                                    READY   STATUS    RESTARTS   AGE
+nemotron-3-nano-predictor-00001-xyz...  2/2     Running   0          5m
+nemotron-3-nano-predictor-00002-abc...  2/2     Running   0          5m</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Check that the model is published in the MaaS catalog:</p>
+<div class="paragraph">
+<p>Access the OpenShift AI dashboard → Gen AI Studio → Models as a Service → verify "nemotron-3-nano" appears in the catalog.</p>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_step_4_instrument_the_model_endpoint"><a class="anchor" href="#_step_4_instrument_the_model_endpoint"></a>Step 4: Instrument the Model Endpoint</h3>
+<div class="paragraph">
+<p>Add instrumentation for monitoring and observability:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: serving.kserve.io/v1alpha1
+kind: LLMInferenceService
+metadata:
+  name: nemotron-3-nano
+  namespace: maas-models
+  annotations:
+    maas.opendatahub.io/publish-as-maas: "true"
+    maas.opendatahub.io/service-tier: "premium,enterprise"
+    prometheus.io/scrape: "true"  # Enable Prometheus scraping
+    prometheus.io/port: "8080"
+    prometheus.io/path: "/metrics"
+spec:
+  # ... previous spec ...
+  monitoring:
+    enabled: true
+    metricsEndpoint: /metrics
+    customMetrics:
+      - name: maas_requests_total
+        help: "Total number of requests to this model"
+        type: counter
+        labels: ["service_tier", "status_code"]
+      - name: maas_token_count
+        help: "Total tokens generated"
+        type: counter
+        labels: ["service_tier", "model_name"]
+      - name: maas_latency_seconds
+        help: "Request latency in seconds"
+        type: histogram
+        labels: ["service_tier", "phase"]
+        buckets: [0.1, 0.5, 1.0, 2.0, 5.0, 10.0]</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_step_5_enforce_access_controls"><a class="anchor" href="#_step_5_enforce_access_controls"></a>Step 5: Enforce Access Controls</h3>
+<div class="paragraph">
+<p>The <code>maas.opendatahub.io/service-tier</code> annotation controls which tiers can access this model:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>"free"</code> - Available to all tiers including free</p>
+</li>
+<li>
+<p><code>"premium"</code> - Available to premium and enterprise tiers only</p>
+</li>
+<li>
+<p><code>"enterprise"</code> - Enterprise tier only</p>
+</li>
+<li>
+<p><code>"premium,enterprise"</code> - Multiple tiers (comma-separated)</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Users in unauthorized tiers will receive a <code>403 Forbidden</code> response when attempting to access the model.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_step_6_test_the_model_endpoint"><a class="anchor" href="#_step_6_test_the_model_endpoint"></a>Step 6: Test the Model Endpoint</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Generate an API key from the dashboard (premium or enterprise user)</p>
+</li>
+<li>
+<p>Test the endpoint:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-console hljs" data-lang="console">$ curl -X POST https://maas.apps.cluster.example.com/v1/chat/completions \
+  -H "Authorization: Bearer &lt;api-key&gt;" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "nemotron-3-nano",
+    "messages": [
+      {"role": "user", "content": "Explain MaaS in one sentence."}
+    ],
+    "max_tokens": 50
+  }'</code></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>Expected response:</p>
+</div>
+<div class="paragraph">
+<p>+</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">{
+  "id": "chatcmpl-123",
+  "object": "chat.completion",
+  "model": "nemotron-3-nano",
+  "choices": [{
+    "message": {
+      "role": "assistant",
+      "content": "Models as a Service (MaaS) is a centralized platform that governs access to AI models through service tiers, maximizing GPU utilization across teams."
+    }
+  }],
+  "usage": {
+    "prompt_tokens": 12,
+    "completion_tokens": 28,
+    "total_tokens": 40
+  }
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You have successfully deployed and published a model as a MaaS endpoint!</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_whats_next"><a class="anchor" href="#_whats_next"></a>What&#8217;s Next</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Now that your model is deployed, the next lab teaches you how to manage model versions and integrate deployments into GitOps pipelines for production lifecycle management.</p>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="s1-distributed-inference.html">Distributed Inference with llm-d and vLLM</a></span>
+  <span class="next"><a href="s3-lifecycle-management-lab.html">Lab: Lifecycle Management and GitOps</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>
