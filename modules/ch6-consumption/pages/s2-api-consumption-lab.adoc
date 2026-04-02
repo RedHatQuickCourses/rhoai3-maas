@@ -1,0 +1,366 @@
+:time_estimate: 25
+
+= Lab: Consuming the OpenAI-Compatible API
+
+_Estimated reading time: *{time_estimate} minutes*._
+
+Objective::
+
+Use curl and Python to interact with the `/v1/chat/completions` endpoint using Bearer token authentication. Read response headers to identify remaining tokens and experiment with setting max tokens. Test API key authentication and rate limiting behavior.
+
+WARNING: Not started yet.
+
+== Before you begin
+
+Ensure you have:
+
+* An API key generated from the MaaS dashboard
+* The MaaS base URL for your cluster
+* curl and Python 3.8+ installed
+* Access to a model published as a MaaS endpoint
+
+== Instructions
+
+=== Step 1: List Available Models
+
+First, discover which models you have access to:
+
+[source,console]
+--
+$ export MAAS_API_KEY="maas_ABC123XYZ789..."
+$ export MAAS_BASE_URL="https://maas.apps.cluster.example.com/v1"
+
+$ curl -H "Authorization: Bearer $MAAS_API_KEY" \
+  $MAAS_BASE_URL/models
+--
+
+Expected response:
+[source,json]
+--
+{
+  "object": "list",
+  "data": [
+    {
+      "id": "nemotron-3-nano",
+      "object": "model",
+      "created": 1704067200,
+      "owned_by": "maas-platform",
+      "permission": ["chat.completions"],
+      "context_length": 8192
+    }
+  ]
+}
+--
+
+=== Step 2: Basic Chat Completion with curl
+
+Make a simple chat completion request:
+
+[source,console]
+--
+$ curl -X POST $MAAS_BASE_URL/chat/completions \
+  -H "Authorization: Bearer $MAAS_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "nemotron-3-nano",
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a helpful AI assistant specializing in Kubernetes."
+      },
+      {
+        "role": "user",
+        "content": "What is a StatefulSet?"
+      }
+    ],
+    "max_tokens": 150,
+    "temperature": 0.7
+  }'
+--
+
+Expected response:
+[source,json]
+--
+{
+  "id": "chatcmpl-xyz789",
+  "object": "chat.completion",
+  "created": 1704067260,
+  "model": "nemotron-3-nano",
+  "choices": [{
+    "index": 0,
+    "message": {
+      "role": "assistant",
+      "content": "A StatefulSet is a Kubernetes workload controller that manages stateful applications. Unlike Deployments, StatefulSets maintain a sticky identity for each pod, provide ordered deployment and scaling, and use persistent volumes that follow the pod lifecycle. Common use cases include databases, distributed systems, and applications requiring stable network identifiers."
+    },
+    "finish_reason": "stop"
+  }],
+  "usage": {
+    "prompt_tokens": 28,
+    "completion_tokens": 68,
+    "total_tokens": 96
+  }
+}
+--
+
+=== Step 3: Check Rate Limit Headers
+
+Inspect response headers to monitor rate limits:
+
+[source,console]
+--
+$ curl -i -X POST $MAAS_BASE_URL/chat/completions \
+  -H "Authorization: Bearer $MAAS_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "nemotron-3-nano",
+    "messages": [{"role": "user", "content": "Hello!"}]
+  }'
+--
+
+Look for these headers in the response:
+[source,http]
+--
+HTTP/1.1 200 OK
+X-RateLimit-Limit: 100
+X-RateLimit-Remaining: 99
+X-RateLimit-Reset: 1704067320
+X-RateLimit-Tier: premium
+Content-Type: application/json
+--
+
+=== Step 4: Python Client with Error Handling
+
+Create a Python script with proper error handling:
+
+[source,python]
+--
+import os
+import time
+from openai import OpenAI, RateLimitError, AuthenticationError
+
+# Initialize client
+client = OpenAI(
+    api_key=os.environ.get("MAAS_API_KEY"),
+    base_url=os.environ.get("MAAS_BASE_URL")
+)
+
+def chat_with_retry(prompt, max_retries=3):
+    """Make a chat completion request with retry logic."""
+    for attempt in range(max_retries):
+        try:
+            response = client.chat.completions.create(
+                model="nemotron-3-nano",
+                messages=[
+                    {"role": "user", "content": prompt}
+                ],
+                max_tokens=200,
+                temperature=0.7
+            )
+            return response
+
+        except RateLimitError as e:
+            if attempt < max_retries - 1:
+                wait_time = 2 ** attempt  # Exponential backoff
+                print(f"Rate limit hit. Waiting {wait_time}s before retry...")
+                time.sleep(wait_time)
+            else:
+                print("Max retries reached. Rate limit still in effect.")
+                raise
+
+        except AuthenticationError:
+            print("Authentication failed. Check your API key.")
+            raise
+
+        except Exception as e:
+            print(f"Unexpected error: {e}")
+            raise
+
+# Example usage
+if __name__ == "__main__":
+    response = chat_with_retry("Explain Kubernetes Operators briefly.")
+
+    print("Response:", response.choices[0].message.content)
+    print(f"\nTokens used: {response.usage.total_tokens}")
+    print(f"  - Prompt: {response.usage.prompt_tokens}")
+    print(f"  - Completion: {response.usage.completion_tokens}")
+--
+
+Run the script:
+[source,console]
+--
+$ python chat_client.py
+Response: Kubernetes Operators are software extensions that use custom resources to manage applications and their components. They automate complex operational tasks like deployment, scaling, backup, and recovery by encoding domain-specific knowledge into code.
+
+Tokens used: 58
+  - Prompt: 9
+  - Completion: 49
+--
+
+=== Step 5: Test Token Limits
+
+Experiment with different `max_tokens` values:
+
+[source,python]
+--
+# Short response
+response_short = client.chat.completions.create(
+    model="nemotron-3-nano",
+    messages=[{"role": "user", "content": "What is Kubernetes?"}],
+    max_tokens=20  # Limit to 20 tokens
+)
+print("Short:", response_short.choices[0].message.content)
+
+# Long response
+response_long = client.chat.completions.create(
+    model="nemotron-3-nano",
+    messages=[{"role": "user", "content": "What is Kubernetes?"}],
+    max_tokens=200  # Allow up to 200 tokens
+)
+print("Long:", response_long.choices[0].message.content)
+--
+
+Output:
+[source,text]
+--
+Short: Kubernetes is a container orchestration platform for automating deployment
+Long: Kubernetes is an open-source container orchestration platform that automates the deployment, scaling, and management of containerized applications. It groups containers into logical units called pods, provides service discovery and load balancing, handles storage orchestration, and enables self-healing through automatic restarts and rescheduling. Originally developed by Google, it's now maintained by the Cloud Native Computing Foundation.
+--
+
+=== Step 6: Monitor Response Headers with Python
+
+Access rate limit headers programmatically:
+
+[source,python]
+--
+import httpx
+
+def get_rate_limit_info():
+    """Fetch and display rate limit information."""
+    headers = {
+        "Authorization": f"Bearer {os.environ['MAAS_API_KEY']}",
+        "Content-Type": "application/json"
+    }
+
+    payload = {
+        "model": "nemotron-3-nano",
+        "messages": [{"role": "user", "content": "test"}],
+        "max_tokens": 10
+    }
+
+    response = httpx.post(
+        f"{os.environ['MAAS_BASE_URL']}/chat/completions",
+        json=payload,
+        headers=headers
+    )
+
+    print("Rate Limit Info:")
+    print(f"  Limit: {response.headers.get('X-RateLimit-Limit')}/min")
+    print(f"  Remaining: {response.headers.get('X-RateLimit-Remaining')}")
+    print(f"  Reset at: {response.headers.get('X-RateLimit-Reset')}")
+    print(f"  Tier: {response.headers.get('X-RateLimit-Tier')}")
+
+    return response.json()
+
+result = get_rate_limit_info()
+--
+
+Output:
+[source,text]
+--
+Rate Limit Info:
+  Limit: 100/min
+  Remaining: 99
+  Reset at: 1704067380
+  Tier: premium
+--
+
+=== Step 7: Test Rate Limiting Behavior
+
+Intentionally trigger rate limiting to see error handling:
+
+[source,python]
+--
+def test_rate_limiting():
+    """Test rate limit by making rapid requests."""
+    print("Testing rate limiting (making rapid requests)...")
+
+    for i in range(150):  # Exceed premium tier limit of 100/min
+        try:
+            response = client.chat.completions.create(
+                model="nemotron-3-nano",
+                messages=[{"role": "user", "content": "test"}],
+                max_tokens=5
+            )
+            print(f"Request {i+1}: Success")
+
+        except RateLimitError as e:
+            print(f"Request {i+1}: RATE LIMITED")
+            print(f"Error details: {e}")
+
+            # Parse reset time from error
+            if hasattr(e, 'response') and e.response:
+                reset_time = e.response.headers.get('X-RateLimit-Reset')
+                print(f"Rate limit resets at: {reset_time}")
+
+            break
+
+test_rate_limiting()
+--
+
+Expected output:
+[source,text]
+--
+Testing rate limiting (making rapid requests)...
+Request 1: Success
+Request 2: Success
+...
+Request 100: Success
+Request 101: RATE LIMITED
+Error details: Rate limit exceeded for tier 'premium'. Limit: 100 requests/minute.
+Rate limit resets at: 1704067440
+--
+
+=== Step 8: Streaming Responses
+
+Test streaming for real-time token generation:
+
+[source,python]
+--
+def stream_chat(prompt):
+    """Stream chat completion tokens as they're generated."""
+    response = client.chat.completions.create(
+        model="nemotron-3-nano",
+        messages=[{"role": "user", "content": prompt}],
+        max_tokens=150,
+        stream=True  # Enable streaming
+    )
+
+    print("Streaming response:")
+    for chunk in response:
+        if chunk.choices[0].delta.content:
+            print(chunk.choices[0].delta.content, end='', flush=True)
+    print()  # Newline after streaming completes
+
+stream_chat("Explain the benefits of MaaS in three bullet points.")
+--
+
+You have successfully consumed MaaS APIs using curl and Python!
+
+== Best Practices Summary
+
+* **Always handle rate limits** with exponential backoff
+* **Monitor token usage** to optimize costs
+* **Use environment variables** for API keys
+* **Implement error handling** for 401, 403, 429, 500, 503
+* **Check response headers** for rate limit information
+* **Set appropriate max_tokens** to control costs and latency
+* **Use streaming** for better user experience in interactive apps
+
+== What's Next
+
+The final lab demonstrates how to integrate the MaaS endpoint with OpenShift DevSpaces to create an AI-powered code assistant, showcasing agentic integration patterns.
+
+////
+Section from course design:
+Use curl and Python to interact with the `/v1/chat/completions` endpoint using Bearer token authentication. Read response headers to identify remaining tokens and experiment with setting max tokens. Test API key authentication and rate limiting behavior.
+////

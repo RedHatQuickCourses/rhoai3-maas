@@ -1,0 +1,207 @@
+:time_estimate: 25
+
+= Lab: Defining Governance Tiers
+
+_Estimated reading time: *{time_estimate} minutes*._
+
+Objective::
+
+Integrate with Kubernetes RBAC to map users to service tiers based on OpenShift groups. Configure access controls and rate limits for default tiers like Level 0 (Free), Level 1 (Premium), and Level 2 (Enterprise). Demonstrate how to create custom service tiers beyond the defaults.
+
+WARNING: Not started yet.
+
+== Before you begin
+
+Ensure you have:
+
+* MaaS component enabled in OpenShift AI
+* Kuadrant (Authorino + Limitador) installed
+* Access to create OpenShift groups and role bindings
+
+== Instructions
+
+=== Step 1: Create OpenShift Groups for Service Tiers
+
+Create groups to represent different service tiers:
+
+[source,console]
+--
+$ oc adm groups new maas-free
+$ oc adm groups new maas-premium
+$ oc adm groups new maas-enterprise
+--
+
+=== Step 2: Add Users to Groups
+
+Add users to the appropriate service tier groups:
+
+[source,console]
+--
+$ oc adm groups add-users maas-free user1 user2
+$ oc adm groups add-users maas-premium user3 user4
+$ oc adm groups add-users maas-enterprise user5 user6
+--
+
+=== Step 3: Configure Default Service Tiers
+
+Define the three default service tiers with rate limits:
+
+[source,yaml]
+--
+apiVersion: kuadrant.io/v1beta2
+kind: RateLimitPolicy
+metadata:
+  name: maas-tier-limits
+  namespace: maas-platform
+spec:
+  targetRef:
+    group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: maas-models
+  limits:
+    "free-tier":
+      rates:
+        - limit: 10
+          duration: 60
+          unit: second
+      when:
+        - selector: auth.identity.metadata.annotations.group
+          operator: eq
+          value: maas-free
+    "premium-tier":
+      rates:
+        - limit: 100
+          duration: 60
+          unit: second
+      when:
+        - selector: auth.identity.metadata.annotations.group
+          operator: eq
+          value: maas-premium
+    "enterprise-tier":
+      rates:
+        - limit: 1000
+          duration: 60
+          unit: second
+      when:
+        - selector: auth.identity.metadata.annotations.group
+          operator: eq
+          value: maas-enterprise
+--
+
+Apply the rate limit policy:
+
+[source,console]
+--
+$ oc apply -f rate-limit-policy.yaml
+--
+
+=== Step 4: Configure Authentication with Authorino
+
+Create an AuthConfig to validate API keys and map to groups:
+
+[source,yaml]
+--
+apiVersion: authorino.kuadrant.io/v1beta2
+kind: AuthConfig
+metadata:
+  name: maas-auth
+  namespace: maas-platform
+spec:
+  hosts:
+    - maas.apps.cluster.example.com
+  authentication:
+    "api-key":
+      apiKey:
+        selector:
+          matchLabels:
+            app: maas
+      credentials:
+        authorizationHeader:
+          prefix: Bearer
+  metadata:
+    "group-metadata":
+      userInfo:
+        identitySources:
+          - selector: auth.identity.metadata.annotations.kubernetes\.io/groups
+            key: group
+  authorization:
+    "group-authorization":
+      opa:
+        rego: |
+          allow {
+            input.auth.identity.metadata.annotations["kubernetes.io/groups"] != null
+          }
+--
+
+Apply the authentication configuration:
+
+[source,console]
+--
+$ oc apply -f authconfig.yaml
+--
+
+=== Step 5: Create Custom Service Tiers
+
+You can create custom tiers beyond the defaults. Here's an example of a "Developer" tier:
+
+[source,yaml]
+--
+apiVersion: kuadrant.io/v1beta2
+kind: RateLimitPolicy
+metadata:
+  name: maas-developer-tier
+  namespace: maas-platform
+spec:
+  targetRef:
+    group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: maas-models
+  limits:
+    "developer-tier":
+      rates:
+        - limit: 50
+          duration: 60
+          unit: second
+        - limit: 5000
+          duration: 3600
+          unit: second
+      when:
+        - selector: auth.identity.metadata.annotations.group
+          operator: eq
+          value: maas-developer
+--
+
+=== Step 6: Verify Tier Configuration
+
+Test the service tiers by making API requests:
+
+1. Generate an API key for a user in the `maas-free` group
+2. Make requests and observe rate limiting at 10 requests/minute
+3. Generate an API key for a user in the `maas-premium` group
+4. Observe the higher rate limit of 100 requests/minute
+
+[source,console]
+--
+$ curl -H "Authorization: Bearer <api-key>" \
+  https://maas.apps.cluster.example.com/v1/models
+--
+
+You have successfully configured governance tiers for MaaS!
+
+== Service Tier Summary
+
+| Tier | Requests/Minute | Use Case |
+|------|----------------|----------|
+| Free (Level 0) | 10 | Evaluation and testing |
+| Premium (Level 1) | 100 | Development teams |
+| Enterprise (Level 2) | 1000 | Production workloads |
+| Custom (Developer) | 50 (+ 5000/hour) | Custom requirements |
+
+== What's Next
+
+Now that you've configured MaaS governance tiers, the next chapter teaches you how to formulate a model selection strategy by evaluating models based on architecture, capabilities, and performance characteristics.
+
+////
+Section from course design:
+Integrate with Kubernetes RBAC to map users to service tiers based on OpenShift groups. Configure access controls and rate limits for default tiers like Level 0 (Free), Level 1 (Premium), and Level 2 (Enterprise). Demonstrate how to create custom service tiers beyond the defaults.
+////

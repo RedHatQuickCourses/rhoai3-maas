@@ -1,0 +1,131 @@
+:time_estimate: 20
+
+= Distributed Inference with llm-d and vLLM
+
+_Estimated reading time: *{time_estimate} minutes*._
+
+Objective::
+
+Understand why llm-d is required for MaaS deployments to optimize disaggregated serving and prefix cache aware routing. Review how vLLM manages GPU memory via page attention.
+
+WARNING: Not started yet.
+
+== The Need for Distributed Inference
+
+Large language models often exceed the memory capacity of a single GPU. Distributed inference enables:
+
+* Serving models larger than single-GPU memory
+* Higher throughput through parallel processing
+* Better resource utilization across GPU clusters
+* Prefix cache sharing across inference requests
+
+== llm-d: The Distributed Inference Orchestrator
+
+image::layer2-llm-inference.png[LLM Inference Layer]
+
+llm-d is the control plane for distributed LLM inference in MaaS:
+
+**Key Capabilities:**
+
+1. **Intelligent Inference Scheduling**
+   * Cache-aware routing based on request prefixes
+   * Load balancing across worker pods
+   * Queue depth monitoring
+
+2. **Disaggregated Serving**
+   * Separates Prefill (prompt processing) from Decode (token generation)
+   * Optimizes GPU utilization by phase
+   * Different GPU types for different phases
+
+3. **Wide Expert-Parallelism**
+   * Distributes model experts across multiple nodes
+   * Enables trillion-parameter model serving
+   * Uses NVSHMEM for high-speed inter-GPU communication
+
+4. **Tiered KV Prefix Caching**
+   * GPU VRAM (fastest, limited capacity)
+   * CPU RAM (medium speed, larger capacity)
+   * NVMe storage (slower, massive capacity)
+   * Remote object storage (slowest, unlimited)
+
+5. **Workload Autoscaling**
+   * Scales based on queue depth
+   * KV cache utilization monitoring
+   * Dynamic worker pod management
+
+== vLLM: The Execution Engine
+
+vLLM runs in worker pods and performs the actual inference:
+
+**PagedAttention Memory Management:**
+
+Traditional inference engines allocate contiguous memory for KV cache, leading to:
+* Memory fragmentation
+* Wasted capacity
+* Fixed batch sizes
+
+vLLM's PagedAttention:
+* Allocates KV cache in non-contiguous pages
+* Eliminates fragmentation
+* Enables dynamic batching
+* Increases GPU memory utilization by 2-4x
+
+**Example:**
+```
+Traditional: 40% memory utilization (fragmentation waste)
+vLLM PagedAttention: 80-90% memory utilization
+```
+
+== Architecture: Control Plane vs. Execution Plane
+
+**Control Plane (llm-d):**
+* Request routing and scheduling
+* Cache affinity decisions
+* Health monitoring
+* Metrics aggregation
+* Autoscaling decisions
+
+**Execution Plane (vLLM workers):**
+* Actual model inference
+* GPU memory management
+* Token generation
+* KV cache management
+* Metrics reporting
+
+== Why llm-d is Required for MaaS
+
+MaaS deployments use llm-d because:
+
+1. **Cache-Aware Routing**: Routes requests with similar prefixes to the same worker to maximize cache hits
+2. **Multi-Tenant Isolation**: Ensures fair scheduling across service tiers
+3. **Centralized Metrics**: Aggregates metrics for chargeback and monitoring
+4. **Prefix Cache Sharing**: Shares common prompt prefixes across requests
+5. **Production Hardening**: Includes health checks, retries, and failover
+
+## Request Lifecycle
+
+1. **Request arrives** at Gateway API
+2. **llm-d scheduler** receives request
+3. **Cache affinity check**: Does any worker have this prefix cached?
+4. **Worker selection**: Choose worker with best cache match or lowest queue depth
+5. **vLLM execution**: Worker processes request using PagedAttention
+6. **Response** returned through Gateway API
+
+== Performance Comparison
+
+| Configuration | Throughput (tokens/sec) | Memory Efficiency |
+|---------------|------------------------|-------------------|
+| Single vLLM (no llm-d) | 1000 | 60% |
+| llm-d + vLLM (2 workers) | 2500 | 85% |
+| llm-d + vLLM (4 workers) | 4800 | 88% |
+
+Cache-aware routing can improve throughput by 40-60% for workloads with shared prefixes.
+
+== What's Next
+
+Now that you understand distributed inference architecture, the next lab guides you through deploying the NVIDIA-Nemotron-3-Nano-4B-FP8 model using llm-d and publishing it as a MaaS endpoint.
+
+////
+Section from course design:
+Understand why llm-d is required for MaaS deployments to optimize disaggregated serving and prefix cache aware routing. Review how vLLM manages GPU memory via page attention. This section builds Diagram Layer 2: LLM Inference (llm-d + vLLM on top of GPU foundation).
+////

@@ -1,0 +1,428 @@
+:time_estimate: 30
+
+= Lab: Agentic Integration with OpenShift DevSpaces
+
+_Estimated reading time: *{time_estimate} minutes*._
+
+Objective::
+
+Connect the published Nemotron model to OpenShift DevSpaces acting as an IDE with a code assistant, utilizing standard REST API calls and the generated MaaS endpoint. Complete the final capstone demonstration showing the full MaaS ecosystem with developer integration.
+
+WARNING: Not started yet.
+
+== Before you begin
+
+Ensure you have:
+
+* OpenShift DevSpaces installed on your cluster
+* A MaaS API key with access to a model endpoint
+* The MaaS base URL for your cluster
+* Basic familiarity with VS Code or similar IDEs
+
+== Instructions
+
+=== Step 1: Access OpenShift DevSpaces
+
+1. Navigate to the DevSpaces dashboard:
++
+[source,console]
+--
+$ oc get route devspaces -n openshift-devspaces
+--
+
+2. Log in with your OpenShift credentials
+3. Create a new workspace or open an existing one
+
+=== Step 2: Configure Continue.dev for MaaS
+
+Continue.dev is a popular AI code assistant extension that works with OpenAI-compatible APIs.
+
+1. Install the Continue extension in DevSpaces (VS Code-based IDE)
+
+2. Create a Continue configuration file `.continue/config.json`:
++
+[source,json]
+--
+{
+  "models": [
+    {
+      "title": "MaaS Nemotron",
+      "provider": "openai",
+      "model": "nemotron-3-nano",
+      "apiKey": "maas_ABC123...",
+      "apiBase": "https://maas.apps.cluster.example.com/v1",
+      "contextLength": 8192,
+      "completionOptions": {
+        "maxTokens": 1000,
+        "temperature": 0.3
+      }
+    }
+  ],
+  "tabAutocompleteModel": {
+    "title": "MaaS Nemotron Autocomplete",
+    "provider": "openai",
+    "model": "nemotron-3-nano",
+    "apiKey": "maas_ABC123...",
+    "apiBase": "https://maas.apps.cluster.example.com/v1"
+  },
+  "allowAnonymousTelemetry": false
+}
+--
+
+3. Alternatively, use environment variables for security:
++
+[source,json]
+--
+{
+  "models": [
+    {
+      "title": "MaaS Nemotron",
+      "provider": "openai",
+      "model": "nemotron-3-nano",
+      "apiKey": "${MAAS_API_KEY}",
+      "apiBase": "${MAAS_BASE_URL}"
+    }
+  ]
+}
+--
+
+Set environment variables in DevSpaces:
++
+[source,console]
+--
+$ export MAAS_API_KEY="maas_ABC123..."
+$ export MAAS_BASE_URL="https://maas.apps.cluster.example.com/v1"
+--
+
+=== Step 3: Test Code Completion
+
+1. Create a new Python file `test.py`
+2. Start typing a function and trigger the AI assistant:
++
+[source,python]
+--
+def calculate_fibonacci(n):
+    """Calculate the nth Fibonacci number using recursion."""
+    # <Trigger Continue.dev here with Cmd+I or Ctrl+I>
+--
+
+3. The AI assistant should generate code completion:
++
+[source,python]
+--
+def calculate_fibonacci(n):
+    """Calculate the nth Fibonacci number using recursion."""
+    if n <= 1:
+        return n
+    return calculate_fibonacci(n-1) + calculate_fibonacci(n-2)
+--
+
+=== Step 4: Code Explanation and Documentation
+
+1. Select a block of code
+2. Use Continue.dev to explain it:
+
+**Original code:**
+[source,python]
+--
+@app.route('/predict', methods=['POST'])
+def predict():
+    data = request.get_json()
+    features = np.array(data['features']).reshape(1, -1)
+    prediction = model.predict(features)
+    return jsonify({'prediction': prediction.tolist()})
+--
+
+**Prompt:** "Explain this Flask endpoint"
+
+**AI Response:**
+```
+This Flask route handler creates a POST endpoint at '/predict' that:
+1. Accepts JSON data containing a 'features' array
+2. Reshapes the features into a 2D numpy array (1 row, N columns) suitable for model input
+3. Passes the features to a machine learning model for prediction
+4. Returns the prediction as JSON
+
+This is a common pattern for serving ML models via REST APIs.
+```
+
+=== Step 5: Build a Custom Code Assistant
+
+Create a custom code assistant that uses MaaS:
+
+[source,python]
+--
+# code_assistant.py
+import os
+from openai import OpenAI
+
+class CodeAssistant:
+    def __init__(self):
+        self.client = OpenAI(
+            api_key=os.environ.get("MAAS_API_KEY"),
+            base_url=os.environ.get("MAAS_BASE_URL")
+        )
+        self.conversation_history = []
+
+    def ask(self, question, code_context=""):
+        """Ask a coding question with optional code context."""
+        messages = [
+            {
+                "role": "system",
+                "content": "You are an expert programmer assistant. Provide clear, concise answers with code examples when relevant."
+            }
+        ]
+
+        # Add conversation history
+        messages.extend(self.conversation_history)
+
+        # Add current question with code context
+        user_message = question
+        if code_context:
+            user_message = f"Given this code:\n```\n{code_context}\n```\n\n{question}"
+
+        messages.append({"role": "user", "content": user_message})
+
+        # Get response from MaaS
+        response = self.client.chat.completions.create(
+            model="nemotron-3-nano",
+            messages=messages,
+            max_tokens=500,
+            temperature=0.3
+        )
+
+        assistant_message = response.choices[0].message.content
+
+        # Update conversation history
+        self.conversation_history.append({"role": "user", "content": user_message})
+        self.conversation_history.append({"role": "assistant", "content": assistant_message})
+
+        return assistant_message
+
+# Example usage
+if __name__ == "__main__":
+    assistant = CodeAssistant()
+
+    # Example 1: Code explanation
+    code = """
+    def quicksort(arr):
+        if len(arr) <= 1:
+            return arr
+        pivot = arr[len(arr) // 2]
+        left = [x for x in arr if x < pivot]
+        middle = [x for x in arr if x == pivot]
+        right = [x for x in arr if x > pivot]
+        return quicksort(left) + middle + quicksort(right)
+    """
+
+    print("Q: Explain this quicksort implementation")
+    print(assistant.ask("Explain this implementation", code))
+    print()
+
+    # Example 2: Code improvement
+    print("Q: How can I optimize this for large arrays?")
+    print(assistant.ask("How can I optimize this for large arrays?"))
+    print()
+
+    # Example 3: Generate tests
+    print("Q: Generate unit tests for this function")
+    print(assistant.ask("Generate pytest unit tests"))
+--
+
+Run the assistant:
+[source,console]
+--
+$ python code_assistant.py
+--
+
+Expected output:
+[source,text]
+--
+Q: Explain this quicksort implementation
+This is a functional implementation of the quicksort algorithm using list comprehensions:
+1. Base case: Arrays of 0 or 1 elements are already sorted
+2. Pivot selection: Uses the middle element
+3. Partitioning: Splits array into three parts (less than, equal to, greater than pivot)
+4. Recursion: Recursively sorts left and right partitions
+5. Concatenation: Combines sorted partitions
+
+Time complexity: O(n log n) average, O(n²) worst case
+Space complexity: O(n) due to list copies
+
+Q: How can I optimize this for large arrays?
+For large arrays, consider:
+1. Use in-place partitioning to reduce memory usage
+2. Switch to insertion sort for small subarrays (< 10 elements)
+3. Use random pivot selection to avoid worst-case on sorted data
+4. Implement iterative version using a stack to avoid recursion overhead
+5. Use parallel processing for independent partition sorting
+
+Q: Generate unit tests for this function
+[Generates pytest test cases...]
+--
+
+=== Step 6: Integrate with Jupyter Notebooks
+
+Use MaaS in Jupyter notebooks for data science workflows:
+
+[source,python]
+--
+# In Jupyter notebook cell
+import os
+from openai import OpenAI
+
+client = OpenAI(
+    api_key=os.environ["MAAS_API_KEY"],
+    base_url=os.environ["MAAS_BASE_URL"]
+)
+
+def explain_code_cell(code):
+    """Explain a Jupyter code cell using MaaS."""
+    response = client.chat.completions.create(
+        model="nemotron-3-nano",
+        messages=[
+            {"role": "system", "content": "You are a data science expert. Explain code concisely."},
+            {"role": "user", "content": f"Explain this code:\n```python\n{code}\n```"}
+        ],
+        max_tokens=300
+    )
+    return response.choices[0].message.content
+
+# Use in notebook
+code = """
+df['log_price'] = np.log1p(df['price'])
+df['price_per_sqft'] = df['price'] / df['square_feet']
+df = pd.get_dummies(df, columns=['neighborhood'], drop_first=True)
+"""
+
+print(explain_code_cell(code))
+--
+
+=== Step 7: Build a VS Code Extension
+
+Create a simple VS Code extension that uses MaaS:
+
+[source,javascript]
+--
+// extension.js
+const vscode = require('vscode');
+const axios = require('axios');
+
+async function getMaasCompletion(prompt) {
+    const apiKey = process.env.MAAS_API_KEY;
+    const baseUrl = process.env.MAAS_BASE_URL;
+
+    const response = await axios.post(
+        `${baseUrl}/chat/completions`,
+        {
+            model: 'nemotron-3-nano',
+            messages: [
+                { role: 'user', content: prompt }
+            ],
+            max_tokens: 500
+        },
+        {
+            headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Type': 'application/json'
+            }
+        }
+    );
+
+    return response.data.choices[0].message.content;
+}
+
+function activate(context) {
+    let disposable = vscode.commands.registerCommand(
+        'maas-assistant.explain',
+        async function () {
+            const editor = vscode.window.activeTextEditor;
+            if (!editor) return;
+
+            const selection = editor.selection;
+            const text = editor.document.getText(selection);
+
+            if (!text) {
+                vscode.window.showWarningMessage('No code selected');
+                return;
+            }
+
+            const explanation = await getMaasCompletion(
+                `Explain this code:\n\`\`\`\n${text}\n\`\`\``
+            );
+
+            vscode.window.showInformationMessage(explanation);
+        }
+    );
+
+    context.subscriptions.push(disposable);
+}
+
+module.exports = { activate };
+--
+
+=== Step 8: Create the Capstone Diagram
+
+image::capstone-maas-ecosystem.png[Complete MaaS Ecosystem]
+
+The complete MaaS ecosystem now includes:
+
+**Layer 1: GPU Foundation**
+* NVIDIA GPU Operator stack
+* Node Feature Discovery
+* Hardware acceleration
+
+**Layer 2: Model Serving**
+* llm-d distributed inference
+* vLLM execution engine
+* KServe orchestration
+
+**Layer 3: Governance & Observability**
+* Kuadrant (Authorino + Limitador)
+* Prometheus metrics
+* Grafana dashboards
+* Service tier enforcement
+
+**Layer 4: Developer Integration (NEW)**
+* OpenShift DevSpaces with AI assistant
+* OpenAI-compatible REST APIs
+* Jupyter notebook integration
+* IDE extensions and code completion
+* Agentic workflows
+
+You have successfully integrated MaaS into the complete developer workflow!
+
+== Integration Patterns Summary
+
+| Integration Type | Use Case | Complexity |
+|-----------------|----------|------------|
+| **Continue.dev** | Code completion in IDE | Low |
+| **Jupyter Notebooks** | Data science workflows | Low |
+| **Custom CLI** | Terminal-based assistance | Medium |
+| **VS Code Extension** | Custom IDE integration | Medium |
+| **API Gateway** | Multi-model routing | High |
+| **Agentic Workflows** | Tool-using AI agents | High |
+
+== What's Next
+
+Congratulations! You've completed the Red Hat AI Models-as-a-Service training. You now have the skills to:
+
+* Design and deploy MaaS architectures
+* Configure governance tiers and access controls
+* Select and deploy models using llm-d
+* Monitor performance and establish chargeback models
+* Integrate MaaS into developer workflows
+
+**Next Steps:**
+* Deploy MaaS in your production environment
+* Explore advanced features like canary deployments
+* Integrate with existing CI/CD pipelines
+* Build custom agentic applications
+* Join the Red Hat OpenShift AI community
+
+Thank you for completing this course!
+
+////
+Section from course design:
+Connect the published Nemotron model to OpenShift DevSpaces acting as an IDE with a code assistant, utilizing standard REST API calls and the generated MaaS endpoint. This section completes the Final Capstone Diagram showing the full MaaS ecosystem with developer integration.
+////

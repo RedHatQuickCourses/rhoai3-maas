@@ -1,0 +1,9 @@
+= Track Metrics and Usage
+
+Goal::
+
+Track Metrics and Usage - Utilize Prometheus and Grafana to visualize token counts, request rates, latency metrics (TTFT, TPOT), and connect hardware-level data to establish chargeback models.
+
+WARNING: Not started yet.
+
+This chapter focuses on monitoring and observability for MaaS deployments. You will learn how to track performance metrics, establish chargeback models, and use Grafana dashboards to visualize consumption patterns.

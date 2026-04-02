@@ -1,0 +1,3 @@
+* xref:index.adoc[]
+** xref:s1-observability-stack.adoc[]
+** xref:s2-metrics-visualization-lab.adoc[]

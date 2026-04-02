@@ -1,0 +1,387 @@
+:time_estimate: 30
+
+= Lab: Visualizing Token and Request Data
+
+_Estimated reading time: *{time_estimate} minutes*._
+
+Objective::
+
+Access Grafana to build queries tracking rate limit hits, token counts, request success, and latency-focused metrics like Time To First Token (TTFT) and Time Per Output Token (TPOT). Create custom dashboards for monitoring MaaS performance and consumption patterns.
+
+WARNING: Not started yet.
+
+== Before you begin
+
+Ensure you have:
+
+* Access to OpenShift monitoring (Prometheus + Grafana)
+* User Workload Monitoring enabled
+* MaaS models deployed with metrics instrumentation
+* Grafana dashboard creation permissions
+
+== Instructions
+
+=== Step 1: Enable User Workload Monitoring
+
+1. Enable user workload monitoring in OpenShift:
++
+[source,yaml]
+--
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cluster-monitoring-config
+  namespace: openshift-monitoring
+data:
+  config.yaml: |
+    enableUserWorkload: true
+--
+
+2. Verify Prometheus is running:
++
+[source,console]
+--
+$ oc get pods -n openshift-user-workload-monitoring
+NAME                                   READY   STATUS    RESTARTS   AGE
+prometheus-user-workload-0             5/5     Running   0          5m
+prometheus-user-workload-1             5/5     Running   0          5m
+thanos-ruler-user-workload-0           3/3     Running   0          5m
+thanos-ruler-user-workload-1           3/3     Running   0          5m
+--
+
+=== Step 2: Create ServiceMonitor for MaaS Metrics
+
+Create a ServiceMonitor to scrape metrics from your model endpoints:
+
+[source,yaml]
+--
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: maas-models-metrics
+  namespace: maas-models
+  labels:
+    app: maas-models
+spec:
+  selector:
+    matchLabels:
+      serving.kserve.io/inferenceservice: nemotron-3-nano
+  endpoints:
+    - port: metrics
+      interval: 30s
+      path: /metrics
+      scheme: http
+--
+
+Apply the ServiceMonitor:
+
+[source,console]
+--
+$ oc apply -f servicemonitor.yaml
+--
+
+=== Step 3: Access Grafana
+
+1. Get the Grafana route:
++
+[source,console]
+--
+$ oc get route grafana -n openshift-monitoring
+--
+
+2. Log in using your OpenShift credentials
+
+=== Step 4: Create MaaS Performance Dashboard
+
+Create a new dashboard with the following panels:
+
+**Panel 1: Total Requests per Service Tier**
+
+Query:
+```promql
+sum by (service_tier) (
+  rate(maas_tier_requests_total[5m])
+) * 60
+```
+
+Visualization: Time series graph
+Unit: requests/minute
+Legend: `{{service_tier}}`
+
+**Panel 2: Total Tokens Generated per Tier**
+
+Query:
+```promql
+sum by (service_tier) (
+  rate(maas_tier_tokens_total[5m])
+) * 60
+```
+
+Visualization: Time series graph
+Unit: tokens/minute
+Legend: `{{service_tier}}`
+
+**Panel 3: Time To First Token (TTFT) P50, P95, P99**
+
+Query for P50:
+```promql
+histogram_quantile(0.50,
+  sum by (le, model_name) (
+    rate(vllm_llmd_time_to_first_token_seconds_bucket[5m])
+  )
+)
+```
+
+Query for P95:
+```promql
+histogram_quantile(0.95,
+  sum by (le, model_name) (
+    rate(vllm_llmd_time_to_first_token_seconds_bucket[5m])
+  )
+)
+```
+
+Query for P99:
+```promql
+histogram_quantile(0.99,
+  sum by (le, model_name) (
+    rate(vllm_llmd_time_to_first_token_seconds_bucket[5m])
+  )
+)
+```
+
+Visualization: Time series graph
+Unit: seconds
+Legend: P50, P95, P99
+
+**Panel 4: Time Per Output Token (TPOT)**
+
+Query:
+```promql
+histogram_quantile(0.95,
+  sum by (le, model_name) (
+    rate(vllm_llmd_time_per_output_token_seconds_bucket[5m])
+  )
+)
+```
+
+Visualization: Gauge
+Unit: milliseconds
+Thresholds:
+- Green: < 20ms
+- Yellow: 20-50ms
+- Red: > 50ms
+
+**Panel 5: KV Cache Hit Rate**
+
+Query:
+```promql
+avg by (model_name) (
+  vllm_llmd_kv_cache_hit_rate
+) * 100
+```
+
+Visualization: Gauge
+Unit: percent
+Target: 90%
+
+**Panel 6: GPU Utilization per Node**
+
+Query:
+```promql
+avg by (node) (
+  DCGM_FI_DEV_GPU_UTIL
+)
+```
+
+Visualization: Heat map or time series
+Unit: percent
+
+**Panel 7: Rate Limit Hits by Tier**
+
+Query:
+```promql
+sum by (service_tier) (
+  rate(limitador_rate_limit_hits_total[5m])
+) * 60
+```
+
+Visualization: Time series graph or bar gauge
+Unit: hits/minute
+
+=== Step 5: Create Chargeback Dashboard
+
+Create a second dashboard for cost tracking:
+
+**Panel 1: GPU Hours per Team**
+
+Query:
+```promql
+sum by (team) (
+  rate(vllm_llmd_gpu_utilization_seconds[1h])
+)
+```
+
+Visualization: Table
+Calculation: Multiply by hourly GPU cost
+
+**Panel 2: Token Cost per Team**
+
+Query:
+```promql
+sum by (team) (
+  rate(maas_tier_tokens_total[1h]) * 3600
+) / 1000000
+```
+
+Visualization: Table with transformation
+Calculation: Multiply by cost per 1M tokens
+
+**Panel 3: Daily Cost Projection**
+
+Query:
+```promql
+(
+  sum by (team) (rate(vllm_llmd_gpu_utilization_seconds[24h])) * 2 * 24
+  +
+  sum by (team) (rate(maas_tier_tokens_total[24h])) * 86400 / 1000000 * 0.50
+)
+```
+
+Visualization: Bar chart
+Unit: USD per day
+
+**Panel 4: Cost Trend Over Time**
+
+Query:
+```promql
+sum(
+  rate(vllm_llmd_gpu_utilization_seconds[1h]) * 2 +
+  rate(maas_tier_tokens_total[1h]) * 3600 / 1000000 * 0.50
+)
+```
+
+Visualization: Time series
+Unit: USD per hour
+
+=== Step 6: Set Up Alerts
+
+Create PrometheusRules for important thresholds:
+
+[source,yaml]
+--
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: maas-alerts
+  namespace: maas-models
+spec:
+  groups:
+    - name: maas
+      interval: 30s
+      rules:
+        - alert: HighTTFT
+          expr: |
+            histogram_quantile(0.95,
+              sum by (le, model_name) (
+                rate(vllm_llmd_time_to_first_token_seconds_bucket[5m])
+              )
+            ) > 2
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High TTFT detected for {{ $labels.model_name }}"
+            description: "95th percentile TTFT is {{ $value }}s (threshold: 2s)"
+
+        - alert: LowCacheHitRate
+          expr: |
+            avg by (model_name) (vllm_llmd_kv_cache_hit_rate) < 0.7
+          for: 10m
+          labels:
+            severity: info
+          annotations:
+            summary: "Low cache hit rate for {{ $labels.model_name }}"
+            description: "Cache hit rate is {{ $value | humanizePercentage }} (target: 90%)"
+
+        - alert: GPUOverutilization
+          expr: |
+            avg by (node) (DCGM_FI_DEV_GPU_UTIL) > 95
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: "GPU overutilization on {{ $labels.node }}"
+            description: "GPU utilization is {{ $value }}% for 15+ minutes"
+
+        - alert: ExcessiveRateLimiting
+          expr: |
+            sum by (service_tier) (
+              rate(limitador_rate_limit_hits_total[5m])
+            ) > 10
+          for: 5m
+          labels:
+            severity: info
+          annotations:
+            summary: "Excessive rate limiting on {{ $labels.service_tier }} tier"
+            description: "{{ $value }} rate limit hits/sec - consider tier upgrade"
+--
+
+Apply the alerts:
+
+[source,console]
+--
+$ oc apply -f prometheusrule.yaml
+--
+
+=== Step 7: Export and Share Dashboards
+
+1. Export the dashboard as JSON from Grafana
+2. Store in Git repository for version control:
++
+[source,text]
+--
+monitoring/
+├── dashboards/
+│   ├── maas-performance.json
+│   └── maas-chargeback.json
+└── alerts/
+    └── maas-alerts.yaml
+--
+
+3. Use Grafana provisioning to automatically deploy dashboards:
++
+[source,yaml]
+--
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboards
+  namespace: openshift-monitoring
+data:
+  maas-performance.json: |
+    {
+      "dashboard": { ... }
+    }
+--
+
+You have successfully created comprehensive monitoring dashboards for MaaS!
+
+== Key Metrics Summary
+
+| Metric Category | Key Indicators | Target Values |
+|----------------|----------------|---------------|
+| **Performance** | TTFT P95, TPOT | TTFT < 2s, TPOT < 30ms |
+| **Efficiency** | GPU Utilization, Cache Hit Rate | 70-85%, >90% |
+| **Consumption** | Tokens/min, Requests/min | Track trends |
+| **Governance** | Rate Limit Hits | Minimize by tier sizing |
+| **Cost** | GPU hours, Token cost | Budget alignment |
+
+== What's Next
+
+Now that you have observability in place, the final chapter demonstrates the developer experience: generating API keys, consuming models via OpenAI-compatible APIs, and integrating with development tools like OpenShift DevSpaces.
+
+////
+Section from course design:
+Access Grafana to build queries tracking rate limit hits, token counts, request success, and latency-focused metrics like Time To First Token (TTFT) and Time Per Output Token (TPOT). Create custom dashboards for monitoring MaaS performance and consumption patterns.
+////

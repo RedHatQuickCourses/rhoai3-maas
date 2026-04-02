@@ -1,0 +1,9 @@
+= Design a MaaS Architecture
+
+Goal::
+
+Design a MaaS Architecture - Understand the "GPU Silo" crisis and map the architectural layers including KServe, Kuadrant, and Gateway API, as well as the foundational GPU strategy using the NVIDIA GPU Operator stack.
+
+WARNING: Not started yet.
+
+This chapter introduces the business value of Models as a Service (MaaS) and the core architectural components that enable it. You will learn how MaaS solves the GPU utilization crisis by acting as a centralized governance layer between users and model serving infrastructure.

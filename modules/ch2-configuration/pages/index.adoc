@@ -1,0 +1,9 @@
+= Configure the MaaS Platform and Ecosystem
+
+Goal::
+
+Configure the MaaS Platform and Ecosystem - Enable MaaS by updating the DataScienceCluster CR to Managed, install necessary ecosystem operators, and configure access controls and rate limits for service tiers.
+
+WARNING: Not started yet.
+
+This chapter covers the hands-on configuration of the MaaS platform, from installing prerequisite operators to enabling the MaaS component and defining governance tiers for multi-tenant access control.

@@ -1,0 +1,211 @@
+:time_estimate: 15
+
+= The Developer Experience
+
+_Estimated reading time: *{time_estimate} minutes*._
+
+Objective::
+
+Navigate the "Models as a service" tab in the OpenShift AI dashboard to generate single-view API keys. Explain the OpenAI-compatible API and standardized error codes like 401 (unauthorized), 403 (forbidden), and 429 (rate limited). Understand the developer experience for consuming MaaS endpoints.
+
+WARNING: Not started yet.
+
+== The MaaS Developer Interface
+
+MaaS provides a streamlined developer experience through the OpenShift AI dashboard's "Gen AI Studio" menu.
+
+=== Accessing the Dashboard
+
+1. Log in to OpenShift AI dashboard
+2. Navigate to *Gen AI Studio* → *Models as a Service*
+3. View available models published to your service tier
+
+The dashboard shows:
+* **Available Models**: Models you have access to based on your tier
+* **Model Details**: Architecture, context length, capabilities
+* **API Endpoints**: Base URLs for model inference
+* **API Keys**: Generate and manage authentication tokens
+* **Usage Metrics**: Token consumption and request counts
+
+== AI Available Assets Catalog
+
+Models published as MaaS endpoints appear in the centralized *AI Available Assets* catalog:
+
+* **Global Visibility**: All published models visible across projects
+* **Centralized Discovery**: Single location for model catalog
+* **Tier-Based Access**: Only shows models available to your tier
+* **Metadata**: Model cards with capabilities, limitations, and examples
+
+== API Key Generation
+
+Developers generate API keys directly from the dashboard:
+
+1. Navigate to *Gen AI Studio* → *Models as a Service* → *API Keys*
+2. Click *Generate API Key*
+3. Provide a descriptive name (e.g., "production-app-key", "dev-testing")
+4. Select scope (optional):
+   * All models in tier
+   * Specific models only
+5. Set expiration (optional):
+   * 30 days, 90 days, 1 year, or never expires
+6. Copy the generated key (shown only once!)
+
+**API Key Format:**
+```
+maas_ABC123XYZ789_DEF456UVW012
+```
+
+**Security Best Practices:**
+* Store keys in environment variables or secret managers
+* Use different keys for dev/staging/prod
+* Rotate keys regularly (every 90 days recommended)
+* Revoke compromised keys immediately
+* Never commit keys to Git repositories
+
+== OpenAI-Compatible API
+
+MaaS endpoints use the OpenAI API specification for maximum compatibility:
+
+**Base URL:**
+```
+https://maas.apps.<cluster-domain>/v1/
+```
+
+**Endpoints:**
+* `GET /v1/models` - List available models
+* `POST /v1/chat/completions` - Chat completions
+* `POST /v1/completions` - Text completions (legacy)
+* `POST /v1/embeddings` - Generate embeddings (if supported)
+
+**Standard Request Format:**
+```json
+{
+  "model": "nemotron-3-nano",
+  "messages": [
+    {"role": "system", "content": "You are a helpful assistant."},
+    {"role": "user", "content": "Explain MaaS briefly."}
+  ],
+  "max_tokens": 100,
+  "temperature": 0.7,
+  "stream": false
+}
+```
+
+**Standard Response Format:**
+```json
+{
+  "id": "chatcmpl-abc123",
+  "object": "chat.completion",
+  "created": 1704067200,
+  "model": "nemotron-3-nano",
+  "choices": [{
+    "index": 0,
+    "message": {
+      "role": "assistant",
+      "content": "MaaS provides governed access to AI models..."
+    },
+    "finish_reason": "stop"
+  }],
+  "usage": {
+    "prompt_tokens": 25,
+    "completion_tokens": 42,
+    "total_tokens": 67
+  }
+}
+```
+
+== HTTP Status Codes and Error Handling
+
+MaaS uses standard HTTP status codes:
+
+| Code | Meaning | Cause | Action |
+|------|---------|-------|--------|
+| **200** | OK | Request succeeded | Process response |
+| **401** | Unauthorized | Invalid or missing API key | Check Bearer token |
+| **403** | Forbidden | Model not in your tier | Upgrade tier or request access |
+| **429** | Too Many Requests | Rate limit exceeded | Implement backoff, upgrade tier |
+| **500** | Internal Server Error | Model server error | Retry with exponential backoff |
+| **503** | Service Unavailable | Model loading or scaling | Retry after delay |
+
+**Error Response Format:**
+```json
+{
+  "error": {
+    "message": "Rate limit exceeded for tier 'free'",
+    "type": "rate_limit_exceeded",
+    "code": 429,
+    "details": {
+      "limit": "10 requests/minute",
+      "current": "12 requests/minute",
+      "reset_at": "2024-04-02T12:35:00Z"
+    }
+  }
+}
+```
+
+## Rate Limit Headers
+
+Responses include rate limit information:
+
+```
+X-RateLimit-Limit: 100
+X-RateLimit-Remaining: 87
+X-RateLimit-Reset: 1704067260
+X-RateLimit-Tier: premium
+```
+
+Developers can check remaining quota before making requests.
+
+## Language SDK Support
+
+MaaS is compatible with OpenAI SDKs:
+
+**Python (openai library):**
+```python
+from openai import OpenAI
+
+client = OpenAI(
+    api_key="maas_ABC123...",
+    base_url="https://maas.apps.cluster.example.com/v1"
+)
+
+response = client.chat.completions.create(
+    model="nemotron-3-nano",
+    messages=[{"role": "user", "content": "Hello!"}]
+)
+```
+
+**JavaScript/TypeScript:**
+```javascript
+import OpenAI from 'openai';
+
+const client = new OpenAI({
+  apiKey: process.env.MAAS_API_KEY,
+  baseURL: 'https://maas.apps.cluster.example.com/v1'
+});
+
+const response = await client.chat.completions.create({
+  model: 'nemotron-3-nano',
+  messages: [{ role: 'user', content: 'Hello!' }]
+});
+```
+
+**cURL:**
+```bash
+curl -X POST https://maas.apps.cluster.example.com/v1/chat/completions \
+  -H "Authorization: Bearer maas_ABC123..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "nemotron-3-nano",
+    "messages": [{"role": "user", "content": "Hello!"}]
+  }'
+```
+
+== What's Next
+
+Now that you understand the developer interface, the next lab demonstrates hands-on consumption of MaaS endpoints using curl and Python, including authentication, error handling, and token management.
+
+////
+Section from course design:
+Navigate the "Models as a service" tab in the OpenShift AI dashboard to generate single-view API keys. Explain the OpenAI-compatible API and standardized error codes like 401 (unauthorized), 403 (forbidden), and 429 (rate limited). Understand the developer experience for consuming MaaS endpoints.
+////

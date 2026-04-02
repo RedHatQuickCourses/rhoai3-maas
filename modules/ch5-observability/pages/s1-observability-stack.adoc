@@ -1,0 +1,168 @@
+:time_estimate: 20
+
+= The MaaS Observability Stack
+
+_Estimated reading time: *{time_estimate} minutes*._
+
+Objective::
+
+Understand how OpenShift AI exposes centralized metrics via User Workload Monitoring. Connect the NVIDIA DCGM Exporter to the platform metrics to demonstrate how hardware data flows up to the observability plane. Discuss how this data enables cross-department chargeback models.
+
+WARNING: Not started yet.
+
+== Observability Architecture
+
+image::layer3-observability.png[Observability Layer]
+
+The MaaS observability stack connects three layers of metrics:
+
+**Layer 1: Hardware Metrics (NVIDIA DCGM Exporter)**
+* GPU utilization percentage
+* GPU memory usage
+* Power consumption
+* Temperature
+* SM (Streaming Multiprocessor) clock speeds
+* PCIe throughput
+
+**Layer 2: Inference Metrics (vLLM + llm-d)**
+* Token counts (prompt_tokens, completion_tokens)
+* Request rates and throughput
+* Time To First Token (TTFT)
+* Time Per Output Token (TPOT)
+* Queue depth
+* Cache hit rates
+
+**Layer 3: Platform Metrics (KServe + Kuadrant)**
+* API request counts
+* Rate limit hits per service tier
+* Authentication failures
+* HTTP status codes
+* Service tier utilization
+
+== User Workload Monitoring
+
+OpenShift provides User Workload Monitoring to collect custom metrics:
+
+1. **Prometheus Operator** deploys Prometheus instances for user workloads
+2. **ServiceMonitor** resources discover and scrape metrics endpoints
+3. **PrometheusRule** resources define alerts
+4. **Grafana** visualizes metrics via dashboards
+
+== NVIDIA DCGM Exporter Integration
+
+The DCGM Exporter bridges hardware metrics to Prometheus:
+
+[source,yaml]
+--
+apiVersion: v1
+kind: ServiceMonitor
+metadata:
+  name: dcgm-exporter
+  namespace: nvidia-gpu-operator
+spec:
+  selector:
+    matchLabels:
+      app: nvidia-dcgm-exporter
+  endpoints:
+    - port: metrics
+      interval: 30s
+      path: /metrics
+--
+
+Key DCGM metrics:
+
+| Metric Name | Description | Unit |
+|-------------|-------------|------|
+| `DCGM_FI_DEV_GPU_UTIL` | GPU utilization | Percentage |
+| `DCGM_FI_DEV_MEM_COPY_UTIL` | Memory bandwidth utilization | Percentage |
+| `DCGM_FI_DEV_FB_USED` | Framebuffer (GPU memory) used | MB |
+| `DCGM_FI_DEV_POWER_USAGE` | Power draw | Watts |
+| `DCGM_FI_DEV_GPU_TEMP` | GPU temperature | Celsius |
+| `DCGM_FI_PROF_SM_ACTIVE` | SM active cycles | Percentage |
+
+## Inference Metrics from vLLM/llm-d
+
+llm-d and vLLM expose OpenMetrics format:
+
+| Metric Name | Type | Description |
+|-------------|------|-------------|
+| `vllm_llmd_requests_total` | Counter | Total requests processed |
+| `vllm_llmd_tokens_total` | Counter | Total tokens generated |
+| `vllm_llmd_time_to_first_token_seconds` | Histogram | TTFT latency distribution |
+| `vllm_llmd_time_per_output_token_seconds` | Histogram | TPOT latency distribution |
+| `vllm_llmd_kv_cache_usage_percent` | Gauge | KV cache utilization |
+| `vllm_llmd_kv_cache_hit_rate` | Gauge | Cache hit percentage |
+| `vllm_llmd_gpu_utilization_seconds` | Counter | GPU active time |
+| `vllm_llmd_batch_size` | Histogram | Batch size distribution |
+
+== MaaS Platform Metrics
+
+Kuadrant and KServe expose governance metrics:
+
+| Metric Name | Type | Description |
+|-------------|------|-------------|
+| `limitador_rate_limit_hits_total` | Counter | Rate limit hits by tier |
+| `authorino_auth_requests_total` | Counter | Authentication requests |
+| `authorino_auth_failures_total` | Counter | Failed authentications |
+| `kserve_request_duration_seconds` | Histogram | End-to-end request latency |
+| `maas_tier_requests_total` | Counter | Requests per service tier |
+| `maas_tier_tokens_total` | Counter | Tokens consumed per tier |
+
+## Chargeback Model Architecture
+
+Combine metrics to calculate cost per team/tier:
+
+**Step 1: Calculate GPU Cost**
+```promql
+# GPU hours per model
+sum by (model_name) (
+  rate(vllm_llmd_gpu_utilization_seconds[1h])
+)
+
+# GPU cost per model (assuming $2/GPU-hour)
+sum by (model_name) (
+  rate(vllm_llmd_gpu_utilization_seconds[1h])
+) * 2
+```
+
+**Step 2: Calculate Token Cost**
+```promql
+# Tokens per tier
+sum by (service_tier) (
+  rate(maas_tier_tokens_total[1h])
+)
+
+# Cost per 1M tokens (assuming $0.50/1M tokens)
+sum by (service_tier) (
+  rate(maas_tier_tokens_total[1h]) * 3600
+) / 1000000 * 0.50
+```
+
+**Step 3: Combine for Chargeback**
+```promql
+# Total cost per team per day
+(
+  sum by (team) (rate(vllm_llmd_gpu_utilization_seconds[24h])) * 2 * 24  # GPU cost
+  +
+  sum by (team) (rate(maas_tier_tokens_total[24h])) * 86400 / 1000000 * 0.50  # Token cost
+)
+```
+
+## Observability Data Flow
+
+1. **Hardware Layer**: DCGM Exporter scrapes GPU metrics → Prometheus
+2. **Inference Layer**: vLLM/llm-d expose metrics → ServiceMonitor → Prometheus
+3. **Platform Layer**: Kuadrant/KServe metrics → ServiceMonitor → Prometheus
+4. **Aggregation**: Prometheus stores all metrics in TSDB
+5. **Visualization**: Grafana queries Prometheus for dashboards
+6. **Alerting**: PrometheusRule triggers alerts on thresholds
+7. **Chargeback**: Finance systems query Prometheus API for cost data
+
+## What's Next
+
+Now that you understand the observability architecture, the next lab guides you through creating Grafana dashboards to visualize token counts, latency metrics, and build custom chargeback queries.
+
+////
+Section from course design:
+Understand how OpenShift AI exposes centralized metrics via User Workload Monitoring. This section builds Diagram Layer 3: Observability - connect the NVIDIA DCGM Exporter to the platform metrics to demonstrate how hardware data flows up to the observability plane. Discuss how this data enables cross-department chargeback models.
+////

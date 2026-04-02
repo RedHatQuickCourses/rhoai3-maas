@@ -1,0 +1,9 @@
+= Deploy Models for MaaS
+
+Goal::
+
+Deploy Models for MaaS - Deploy models transitioning from single-node vLLM to distributed llm-d runtime, publish as MaaS endpoints, instrument endpoints, and integrate into GitOps pipelines.
+
+WARNING: Not started yet.
+
+This chapter teaches you how to deploy large language models using the distributed llm-d runtime, publish them as governed MaaS endpoints, and manage their lifecycle through GitOps workflows.

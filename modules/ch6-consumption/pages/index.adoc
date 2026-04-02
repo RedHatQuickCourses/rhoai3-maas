@@ -1,0 +1,9 @@
+= Consume MaaS Endpoints and Agentic Integrations
+
+Goal::
+
+Consume MaaS Endpoints and Agentic Integrations - Generate API keys, consume models using OpenAI-compatible REST API endpoints, and connect published endpoints to downstream applications like OpenShift DevSpaces.
+
+WARNING: Not started yet.
+
+This chapter demonstrates the developer experience for consuming MaaS endpoints. You will learn how to generate API keys, interact with OpenAI-compatible APIs, and integrate models into development tools like OpenShift DevSpaces.

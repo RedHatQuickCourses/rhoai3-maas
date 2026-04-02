@@ -1,0 +1,39 @@
+:time_estimate: 10
+
+= Solving the GPU Silo Crisis
+
+_Estimated reading time: *{time_estimate} minutes*._
+
+Objective::
+
+Understand the "GPU Silo" crisis where expensive, limited hardware is trapped within individual teams, leading to simultaneous idle capacity and project bottlenecks. Explain how MaaS acts as a centralized governance layer sitting directly between users and the model serving infrastructure to maximize ROI of scarce hardware.
+
+WARNING: Not started yet.
+
+== The GPU Silo Problem
+
+Organizations currently face a "GPU Silo" crisis where expensive, limited hardware is trapped within individual teams. This leads to:
+
+* Simultaneous idle capacity in some teams while others face project bottlenecks
+* Redundant model deployments across teams
+* Wasted hardware resources and poor ROI on GPU investments
+* Lack of centralized orchestration for usage quotas and multi-tenant security
+* No standardized model library or governance layer
+
+== MaaS as the Solution
+
+Models as a Service (MaaS) solves this crisis by acting as a governance layer sitting directly between users and the model serving infrastructure. MaaS provides:
+
+* **Centralized Orchestration**: Enforce usage quotas and ensure fair resource allocation
+* **Multi-Tenant Security**: Isolate workloads while maximizing hardware utilization
+* **Standardized Model Library**: Provide a catalog of governed, production-ready models
+* **Maximum ROI**: Transform isolated GPUs into fairly scheduled, shared services
+
+== What's Next
+
+Now that you understand the business problem MaaS solves, the next section explores the core architecture stack and GPU strategy that enables MaaS, including the foundational components like KServe, Kuadrant, and the NVIDIA GPU Operator.
+
+////
+Section from course design:
+Understand the "GPU Silo" crisis where expensive, limited hardware is trapped within individual teams, leading to simultaneous idle capacity and project bottlenecks. Explain how MaaS acts as a centralized governance layer sitting directly between users and the model serving infrastructure to maximize ROI of scarce hardware.
+////

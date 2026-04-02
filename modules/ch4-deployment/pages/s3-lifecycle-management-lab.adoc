@@ -1,0 +1,300 @@
+:time_estimate: 25
+
+= Lab: Lifecycle Management and GitOps
+
+_Estimated reading time: *{time_estimate} minutes*._
+
+Objective::
+
+Manage model versions and integrate the model serving deployment into existing GitOps pipelines. Demonstrate version management, rollback capabilities, and declarative deployment patterns for production environments.
+
+WARNING: Not started yet.
+
+== Before you begin
+
+Ensure you have:
+
+* A deployed LLMInferenceService from the previous lab
+* Access to a Git repository for GitOps
+* OpenShift GitOps (Argo CD) or similar GitOps operator installed
+
+== Instructions
+
+=== Step 1: Version Management Strategy
+
+Implement a versioning strategy for your models:
+
+1. Use semantic versioning in model paths:
++
+[source,text]
+--
+s3://models/nemotron-3-nano/v1.0.0/
+s3://models/nemotron-3-nano/v1.1.0/
+s3://models/nemotron-3-nano/v2.0.0/
+--
+
+2. Create separate LLMInferenceService resources for each version:
++
+[source,yaml]
+--
+apiVersion: serving.kserve.io/v1alpha1
+kind: LLMInferenceService
+metadata:
+  name: nemotron-3-nano-v1
+  namespace: maas-models
+  labels:
+    app.kubernetes.io/version: "1.0.0"
+spec:
+  model:
+    storage:
+      path: nemotron-3-nano/v1.0.0
+  # ... rest of spec
+---
+apiVersion: serving.kserve.io/v1alpha1
+kind: LLMInferenceService
+metadata:
+  name: nemotron-3-nano-v2
+  namespace: maas-models
+  labels:
+    app.kubernetes.io/version: "2.0.0"
+spec:
+  model:
+    storage:
+      path: nemotron-3-nano/v2.0.0
+  # ... rest of spec
+--
+
+=== Step 2: Canary Deployments
+
+Implement canary deployments for safe model updates:
+
+[source,yaml]
+--
+apiVersion: serving.kserve.io/v1alpha1
+kind: LLMInferenceService
+metadata:
+  name: nemotron-3-nano
+  annotations:
+    maas.opendatahub.io/canary-enabled: "true"
+spec:
+  canaryTrafficPercent: 10  # Route 10% to new version
+  predictor:
+    # Production version (90% traffic)
+    model:
+      storage:
+        path: nemotron-3-nano/v1.0.0
+  canary:
+    # Canary version (10% traffic)
+    model:
+      storage:
+        path: nemotron-3-nano/v2.0.0
+  canaryPromotion:
+    automatic: false  # Manual promotion required
+    successThreshold: 95  # 95% success rate required
+    evaluationPeriod: 1h  # Monitor for 1 hour
+--
+
+Monitor canary metrics:
+
+[source,console]
+--
+$ oc get llminferenceservice nemotron-3-nano -o jsonpath='{.status.canary}'
+{
+  "trafficPercent": 10,
+  "successRate": 98.5,
+  "errorRate": 1.5,
+  "promoted": false
+}
+--
+
+Promote canary if metrics are good:
+
+[source,console]
+--
+$ oc patch llminferenceservice nemotron-3-nano \
+  --type=merge \
+  -p '{"spec":{"canaryTrafficPercent":100}}'
+--
+
+=== Step 3: GitOps Integration
+
+1. Create a Git repository structure:
++
+[source,text]
+--
+maas-models/
+├── base/
+│   ├── kustomization.yaml
+│   └── llm-inference-service.yaml
+├── environments/
+│   ├── dev/
+│   │   └── kustomization.yaml
+│   ├── staging/
+│   │   └── kustomization.yaml
+│   └── prod/
+│       └── kustomization.yaml
+└── versions/
+    ├── v1.0.0/
+    │   └── kustomization.yaml
+    └── v2.0.0/
+        └── kustomization.yaml
+--
+
+2. Base LLMInferenceService template:
++
+[source,yaml]
+--
+# base/llm-inference-service.yaml
+apiVersion: serving.kserve.io/v1alpha1
+kind: LLMInferenceService
+metadata:
+  name: nemotron-3-nano
+  namespace: maas-models
+spec:
+  model:
+    modelFormat:
+      name: vllm
+    storage:
+      key: model-storage-connection
+      path: nemotron-3-nano/VERSION  # Will be patched
+  runtime:
+    name: llm-d
+  scaling:
+    minReplicas: MIN_REPLICAS  # Will be patched
+    maxReplicas: MAX_REPLICAS
+--
+
+3. Environment-specific overlays:
++
+[source,yaml]
+--
+# environments/prod/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../base
+patches:
+  - target:
+      kind: LLMInferenceService
+      name: nemotron-3-nano
+    patch: |-
+      - op: replace
+        path: /spec/model/storage/path
+        value: nemotron-3-nano/v2.0.0
+      - op: replace
+        path: /spec/scaling/minReplicas
+        value: 3
+      - op: replace
+        path: /spec/scaling/maxReplicas
+        value: 10
+--
+
+4. Create an Argo CD Application:
++
+[source,yaml]
+--
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: maas-models-prod
+  namespace: openshift-gitops
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/your-org/maas-models.git
+    targetRevision: main
+    path: environments/prod
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: maas-models
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+--
+
+Apply the Argo CD application:
+
+[source,console]
+--
+$ oc apply -f argocd-application.yaml
+--
+
+=== Step 4: Rollback Procedure
+
+If you need to roll back to a previous version:
+
+1. Update the Git repository to point to the previous version:
++
+[source,bash]
+--
+$ cd maas-models/environments/prod
+$ git revert HEAD  # Revert to previous commit
+$ git push origin main
+--
+
+2. Argo CD will automatically sync and roll back the deployment
+
+3. Verify the rollback:
++
+[source,console]
+--
+$ oc get llminferenceservice nemotron-3-nano -o jsonpath='{.spec.model.storage.path}'
+nemotron-3-nano/v1.0.0
+--
+
+=== Step 5: Automated Testing in Pipeline
+
+Integrate model testing into your GitOps pipeline:
+
+[source,yaml]
+--
+# .github/workflows/model-deploy.yaml
+name: Deploy Model
+on:
+  push:
+    branches: [main]
+    paths: ['environments/**']
+
+jobs:
+  test-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Test model deployment
+        run: |
+          # Validate YAML
+          kustomize build environments/prod | kubeval
+
+          # Test model inference
+          curl -X POST $MODEL_URL/v1/chat/completions \
+            -H "Authorization: Bearer $API_KEY" \
+            -d '{"model":"nemotron-3-nano","messages":[{"role":"user","content":"test"}]}'
+
+      - name: Update Argo CD
+        run: |
+          argocd app sync maas-models-prod
+--
+
+You have successfully implemented lifecycle management and GitOps for MaaS models!
+
+== Version Management Best Practices
+
+* **Always use version tags** in model paths and metadata
+* **Test in non-production** environments first (dev → staging → prod)
+* **Monitor canary deployments** before promoting to 100%
+* **Keep previous versions** available for quick rollback
+* **Automate testing** in your CI/CD pipeline
+* **Use GitOps** for declarative, auditable deployments
+
+== What's Next
+
+Now that you've deployed and managed model lifecycles, the next chapter teaches you how to track metrics and usage patterns using Prometheus and Grafana for observability and chargeback.
+
+////
+Section from course design:
+Manage model versions and integrate the model serving deployment into existing GitOps pipelines. Demonstrate version management, rollback capabilities, and declarative deployment patterns for production environments.
+////

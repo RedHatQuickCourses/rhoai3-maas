@@ -1,0 +1,127 @@
+:time_estimate: 15
+
+= Assessing Model Capabilities: Reasoning vs. Non-Reasoning
+
+_Estimated reading time: *{time_estimate} minutes*._
+
+Objective::
+
+Assess models based on capabilities: evaluate models based on reasoning vs. non-reasoning capabilities. Understand how different capability profiles impact workload suitability and computational requirements.
+
+WARNING: Not started yet.
+
+== Reasoning Models
+
+Reasoning models use chain-of-thought techniques and extended inference time to improve answer quality.
+
+**Characteristics:**
+* Generate intermediate reasoning steps
+* Higher token output per query (reasoning tokens + answer)
+* Slower time-to-first-token (TTFT)
+* Better performance on complex tasks
+* Often use techniques like self-reflection or verification
+
+**Examples:**
+* OpenAI o1, o1-mini
+* Google Gemini Deep Research
+* Anthropic Claude 3 Opus (with extended thinking)
+* QwQ-32B-Preview
+
+**Use Cases:**
+* Complex problem-solving (math, coding, logic)
+* Multi-step planning
+* Scientific analysis
+* Legal or medical reasoning
+* Tasks requiring accuracy over speed
+
+== Non-Reasoning Models
+
+Standard language models that generate responses directly without explicit reasoning steps.
+
+**Characteristics:**
+* Direct answer generation
+* Lower token output per query
+* Faster time-to-first-token
+* Suitable for straightforward tasks
+* More cost-effective at scale
+
+**Examples:**
+* Llama 3.1 70B
+* Mistral 7B
+* Granite 3.0
+* NVIDIA Nemotron
+
+**Use Cases:**
+* Content generation
+* Summarization
+* Translation
+* Simple Q&A
+* Chatbots and customer service
+* Code completion (non-complex)
+
+== Computational Impact
+
+| Metric | Reasoning Models | Non-Reasoning Models |
+|--------|------------------|----------------------|
+| Tokens per Query | High (200-2000+) | Moderate (50-500) |
+| Time-to-First-Token | Higher (reasoning latency) | Lower (direct generation) |
+| Tokens per Second | Same (generation speed) | Same (generation speed) |
+| Total Latency | Higher (more tokens) | Lower (fewer tokens) |
+| GPU Utilization | Higher (longer occupation) | Lower (faster completion) |
+| Cost per Query | Higher (more tokens) | Lower (fewer tokens) |
+
+== Workload Suitability
+
+**Reasoning Models Are Better For:**
+* Complex mathematical problems
+* Multi-step coding challenges
+* Scientific hypothesis generation
+* Strategic planning
+* Tasks where accuracy justifies cost
+
+**Non-Reasoning Models Are Better For:**
+* High-throughput applications
+* Simple classification or extraction
+* Real-time chat applications
+* Cost-sensitive workloads
+* When speed matters more than deep analysis
+
+== Hybrid Approach
+
+Many organizations deploy both model types:
+
+1. **Router Pattern:**
+   * Simple queries → Non-reasoning model (fast, cheap)
+   * Complex queries → Reasoning model (accurate, slower)
+   * Use classifier to route requests
+
+2. **Tiered Service:**
+   * Free tier: Non-reasoning models only
+   * Premium tier: Access to reasoning models
+   * Enterprise tier: Unrestricted access
+
+== GPU Resource Planning
+
+**Example Workload:**
+* 1000 requests/hour
+* Reasoning model: 500 tokens/request, 30 sec latency
+* Non-reasoning model: 100 tokens/request, 5 sec latency
+
+**Reasoning Model Cluster:**
+* Needs ~4 GPUs to handle load
+* Higher memory requirements
+* More expensive infrastructure
+
+**Non-Reasoning Model Cluster:**
+* Needs ~1 GPU to handle load
+* Lower memory requirements
+* Cost-effective at scale
+
+== What's Next
+
+Now that you understand model capabilities, the next section provides a quiz to test your knowledge of context length limitations, tool calling considerations, and choosing the right model for specific workloads.
+
+////
+Section from course design:
+Assess models based on capabilities: evaluate models based on reasoning vs. non-reasoning capabilities. Understand how different capability profiles impact workload suitability and computational requirements.
+////

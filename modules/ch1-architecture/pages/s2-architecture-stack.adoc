@@ -1,0 +1,79 @@
+:time_estimate: 15
+
+= The Core Architecture Stack and GPU Strategy
+
+_Estimated reading time: *{time_estimate} minutes*._
+
+Objective::
+
+Map the architectural layers, specifically understanding the roles of KServe, Kuadrant, and the Gateway API to establish strict serving boundaries. Introduce the "Foundational Accelerator Enablement" layer at the hardware level, detailing the NVIDIA GPU Operator, including drivers, DCGM, the container toolkit, MIG, and the manager.
+
+WARNING: Not started yet.
+
+== MaaS Architectural Layers
+
+The MaaS architecture consists of several distinct layers working together:
+
+=== Layer 1: Foundational Accelerator Enablement
+
+image::layer1-gpu-foundation.png[GPU Foundation Layer]
+
+The foundation of MaaS is built on the NVIDIA GPU Operator stack:
+
+* **GPU Drivers**: Kernel-level drivers for GPU access
+* **DCGM (Data Center GPU Manager)**: Monitoring and health management
+* **Container Toolkit**: Enable GPU access within containers
+* **MIG (Multi-Instance GPU)**: Partition GPUs into isolated instances
+* **GPU Manager**: Orchestrate GPU resources across the cluster
+
+=== Layer 2: Model Serving Infrastructure
+
+* **KServe**: Kubernetes-native model serving framework
+* **Gateway API**: Modern Kubernetes networking and routing
+* **Kuadrant Components**:
+** Authorino: JWT validation and authentication
+** Limitador: Rate limiting and quota enforcement
+
+=== Layer 3: MaaS Governance and Control
+
+* Service tier management (Free, Premium, Enterprise)
+* RBAC integration with OpenShift groups
+* Model catalog and registry
+* API key management and authentication
+
+== Key Architectural Components
+
+=== KServe
+
+KServe provides the model serving framework with:
+
+* Standardized inference protocols
+* Autoscaling capabilities
+* Model versioning and canary deployments
+* Integration with Gateway API for routing
+
+=== Kuadrant
+
+Kuadrant enforces governance policies:
+
+* **Authorino**: Validates API keys and JWT tokens
+* **Limitador**: Enforces rate limits based on service tiers
+* Integration with Gateway API for policy enforcement
+
+=== Gateway API
+
+The Gateway API provides:
+
+* Modern, extensible routing for model endpoints
+* Integration with Kuadrant for policy enforcement
+* OpenAI-compatible API endpoints
+* TLS termination and certificate management
+
+== What's Next
+
+Now that you've learned the MaaS architecture, the next section tests your understanding through a knowledge check covering the GPU Silo problem, MaaS benefits, and the foundational components.
+
+////
+Section from course design:
+Map the architectural layers, specifically understanding the roles of KServe, Kuadrant, and the Gateway API to establish strict serving boundaries. Introduce the "Foundational Accelerator Enablement" layer at the hardware level, detailing the NVIDIA GPU Operator, including drivers, DCGM, the container toolkit, MIG, and the manager. This section builds Diagram Layer 1: GPU Foundation.
+////
