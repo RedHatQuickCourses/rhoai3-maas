@@ -1,0 +1,9 @@
+= Formulate a Model Selection Strategy
+
+Goal::
+
+Formulate a Model Selection Strategy - Evaluate models based on architecture (dense vs. sparse), capabilities (reasoning vs. non-reasoning), context length, and tool calling considerations.
+
+WARNING: Not started yet.
+
+This chapter provides the technical expertise needed to select optimal model architectures based on customer needs and hardware impact. You will learn how different model characteristics affect performance, cost, and workload suitability.

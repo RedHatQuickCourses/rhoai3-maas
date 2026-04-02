@@ -1,0 +1,155 @@
+:time_estimate: 20
+
+= Lab: Enabling the MaaS Component
+
+_Estimated reading time: *{time_estimate} minutes*._
+
+Objective::
+
+Update the `modelsAsService` component in the DataScienceCluster CR to `Managed` to trigger the instantiation of MaaS features. Configure the OdhDashboardConfig to enable Gen AI Studio and MaaS interface. Install and enable the Llama Stack Operator required for dashboard access.
+
+WARNING: Not started yet.
+
+== Before you begin
+
+Ensure you have:
+
+* Cluster-admin access to an OpenShift cluster
+* Red Hat OpenShift AI 3.4 operator installed
+* All ecosystem operators installed (NFD, GPU Operator, Cert-Manager, LWS, Kueue, Kuadrant)
+* GPU nodes available in the cluster
+
+== Instructions
+
+=== Step 1: Update the DataScienceCluster CR
+
+The DataScienceCluster custom resource controls which components are enabled in OpenShift AI.
+
+1. Get the current DataScienceCluster configuration:
++
+[source,console]
+--
+$ oc get datasciencecluster default-dsc -o yaml
+--
+
+2. Update the DataScienceCluster to enable MaaS:
++
+[source,yaml]
+--
+apiVersion: datasciencecluster.opendatahub.io/v1
+kind: DataScienceCluster
+metadata:
+  name: default-dsc
+spec:
+  components:
+    dashboard:
+      managementState: Managed
+    kserve:
+      managementState: Managed
+      serving:
+        ingressGateway:
+          certificate:
+            type: SelfSigned
+        managementState: Managed
+        name: knative-serving
+    modelsAsService:
+      managementState: Managed  # Enable MaaS component
+    modelregistry:
+      managementState: Managed
+    aipipelines:
+      managementState: Managed
+    kueue:
+      managementState: Removed  # Using cluster-wide installation
+--
+
+3. Apply the updated configuration:
++
+[source,console]
+--
+$ oc apply -f datasciencecluster.yaml
+--
+
+4. Verify the MaaS component is ready:
++
+[source,console]
+--
+$ oc get datasciencecluster default-dsc
+NAME          AGE    PHASE   CREATED AT
+default-dsc   10m    Ready   2024-04-02T12:00:00Z
+--
+
+=== Step 2: Configure the Dashboard for Gen AI Studio
+
+The MaaS developer interface is located within the "Gen AI Studio" menu and must be explicitly enabled.
+
+1. Update the OdhDashboardConfig:
++
+[source,yaml]
+--
+apiVersion: opendatahub.io/v1alpha
+kind: OdhDashboardConfig
+metadata:
+  name: odh-dashboard-config
+  namespace: redhat-ods-applications
+spec:
+  dashboardConfig:
+    enablement: true
+    disableInfo: false
+    disableSupport: false
+    disableClusterManager: false
+  genAiStudio: true          # Enable Gen AI Studio menu
+  modelAsService: true       # Enable MaaS interface
+--
+
+2. Apply the dashboard configuration:
++
+[source,console]
+--
+$ oc apply -f odhdashboardconfig.yaml
+--
+
+=== Step 3: Install the Llama Stack Operator
+
+Accessing the MaaS dashboard interface requires the Llama Stack Operator.
+
+1. Create the operator subscription:
++
+[source,yaml]
+--
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: llama-stack-operator
+  namespace: openshift-operators
+spec:
+  channel: alpha
+  name: llama-stack-operator
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace
+--
+
+2. Verify the operator is installed:
++
+[source,console]
+--
+$ oc get csv -n openshift-operators | grep llama-stack
+llama-stack-operator.v0.1.0   Llama Stack Operator   0.1.0   Succeeded
+--
+
+=== Step 4: Verify MaaS is Enabled
+
+1. Access the OpenShift AI dashboard
+2. Look for the "Gen AI Studio" menu item
+3. Navigate to "Models as a Service"
+4. Verify you can see the MaaS interface
+
+You have successfully enabled MaaS in OpenShift AI 3.4!
+
+== What's Next
+
+Now that MaaS is enabled, the next lab teaches you how to define governance tiers and configure access controls for multi-tenant model serving.
+
+////
+Section from course design:
+Update the `modelsAsService` component in the DataScienceCluster CR to `Managed` to trigger the instantiation of MaaS features. Configure the OdhDashboardConfig to enable Gen AI Studio and MaaS interface. Install and enable the Llama Stack Operator required for dashboard access.
+////

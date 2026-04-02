@@ -1,0 +1,232 @@
+:time_estimate: 30
+
+= Lab: Publishing and Instrumenting a Model
+
+_Estimated reading time: *{time_estimate} minutes*._
+
+Objective::
+
+Deploy a model (using the NVIDIA-Nemotron-3-Nano-4B-FP8 as the standard lab model) transitioning from single-node vLLM to the distributed llm-d runtime. Select "Publish as MaaS endpoint" to expose the model. Learn how to properly instrument model endpoints and enforce access controls.
+
+WARNING: Not started yet.
+
+== Before you begin
+
+Ensure you have:
+
+* MaaS enabled in OpenShift AI
+* GPU nodes with appropriate tolerations
+* Model files stored in S3-compatible storage (MinIO or OpenShift Data Foundation)
+* Access to create LLMInferenceService resources
+
+== Instructions
+
+=== Step 1: Prepare Model Storage
+
+1. Create a data connection to your S3 storage:
++
+[source,yaml]
+--
+apiVersion: v1
+kind: Secret
+metadata:
+  name: model-storage-connection
+  namespace: maas-models
+stringData:
+  AWS_ACCESS_KEY_ID: <access-key>
+  AWS_SECRET_ACCESS_KEY: <secret-key>
+  AWS_S3_ENDPOINT: https://s3.example.com
+  AWS_DEFAULT_REGION: us-east-1
+  AWS_S3_BUCKET: models
+type: Opaque
+--
+
+2. Upload the NVIDIA-Nemotron-3-Nano-4B-FP8 model to your S3 bucket:
++
+[source,console]
+--
+$ aws s3 cp --recursive /path/to/nemotron-3-nano-4b-fp8/ \
+  s3://models/nemotron-3-nano-4b-fp8/
+--
+
+=== Step 2: Create LLMInferenceService
+
+Create the LLMInferenceService CR to deploy with llm-d:
+
+[source,yaml]
+--
+apiVersion: serving.kserve.io/v1alpha1
+kind: LLMInferenceService
+metadata:
+  name: nemotron-3-nano
+  namespace: maas-models
+  annotations:
+    serving.kserve.io/deploymentMode: "ModelMesh"
+    maas.opendatahub.io/publish-as-maas: "true"  # Publish as MaaS endpoint
+    maas.opendatahub.io/service-tier: "premium,enterprise"  # Access control
+spec:
+  model:
+    modelFormat:
+      name: vllm
+    storage:
+      key: model-storage-connection
+      path: nemotron-3-nano-4b-fp8
+  runtime:
+    name: llm-d
+    containers:
+      - name: vllm
+        args:
+          - --model=/mnt/models/nemotron-3-nano-4b-fp8
+          - --dtype=fp8
+          - --max-model-len=8192
+          - --tensor-parallel-size=1
+          - --enable-prefix-caching
+        resources:
+          limits:
+            nvidia.com/gpu: "1"
+          requests:
+            nvidia.com/gpu: "1"
+            memory: "16Gi"
+            cpu: "4"
+  scaling:
+    minReplicas: 2
+    maxReplicas: 4
+    metric: concurrency
+    target: 10
+  monitoring:
+    enabled: true
+    metricsEndpoint: /metrics
+--
+
+Apply the configuration:
+
+[source,console]
+--
+$ oc apply -f llm-inference-service.yaml
+--
+
+=== Step 3: Verify Deployment
+
+1. Check the LLMInferenceService status:
++
+[source,console]
+--
+$ oc get llminferenceservice nemotron-3-nano
+NAME               READY   URL
+nemotron-3-nano    True    https://maas.apps.cluster.example.com/v1/models/nemotron-3-nano
+--
+
+2. Verify worker pods are running:
++
+[source,console]
+--
+$ oc get pods -l serving.kserve.io/inferenceservice=nemotron-3-nano
+NAME                                    READY   STATUS    RESTARTS   AGE
+nemotron-3-nano-predictor-00001-xyz...  2/2     Running   0          5m
+nemotron-3-nano-predictor-00002-abc...  2/2     Running   0          5m
+--
+
+3. Check that the model is published in the MaaS catalog:
++
+Access the OpenShift AI dashboard → Gen AI Studio → Models as a Service → verify "nemotron-3-nano" appears in the catalog.
+
+=== Step 4: Instrument the Model Endpoint
+
+Add instrumentation for monitoring and observability:
+
+[source,yaml]
+--
+apiVersion: serving.kserve.io/v1alpha1
+kind: LLMInferenceService
+metadata:
+  name: nemotron-3-nano
+  namespace: maas-models
+  annotations:
+    maas.opendatahub.io/publish-as-maas: "true"
+    maas.opendatahub.io/service-tier: "premium,enterprise"
+    prometheus.io/scrape: "true"  # Enable Prometheus scraping
+    prometheus.io/port: "8080"
+    prometheus.io/path: "/metrics"
+spec:
+  # ... previous spec ...
+  monitoring:
+    enabled: true
+    metricsEndpoint: /metrics
+    customMetrics:
+      - name: maas_requests_total
+        help: "Total number of requests to this model"
+        type: counter
+        labels: ["service_tier", "status_code"]
+      - name: maas_token_count
+        help: "Total tokens generated"
+        type: counter
+        labels: ["service_tier", "model_name"]
+      - name: maas_latency_seconds
+        help: "Request latency in seconds"
+        type: histogram
+        labels: ["service_tier", "phase"]
+        buckets: [0.1, 0.5, 1.0, 2.0, 5.0, 10.0]
+--
+
+=== Step 5: Enforce Access Controls
+
+The `maas.opendatahub.io/service-tier` annotation controls which tiers can access this model:
+
+* `"free"` - Available to all tiers including free
+* `"premium"` - Available to premium and enterprise tiers only
+* `"enterprise"` - Enterprise tier only
+* `"premium,enterprise"` - Multiple tiers (comma-separated)
+
+Users in unauthorized tiers will receive a `403 Forbidden` response when attempting to access the model.
+
+=== Step 6: Test the Model Endpoint
+
+1. Generate an API key from the dashboard (premium or enterprise user)
+2. Test the endpoint:
++
+[source,console]
+--
+$ curl -X POST https://maas.apps.cluster.example.com/v1/chat/completions \
+  -H "Authorization: Bearer <api-key>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "nemotron-3-nano",
+    "messages": [
+      {"role": "user", "content": "Explain MaaS in one sentence."}
+    ],
+    "max_tokens": 50
+  }'
+--
+
+Expected response:
++
+[source,json]
+--
+{
+  "id": "chatcmpl-123",
+  "object": "chat.completion",
+  "model": "nemotron-3-nano",
+  "choices": [{
+    "message": {
+      "role": "assistant",
+      "content": "Models as a Service (MaaS) is a centralized platform that governs access to AI models through service tiers, maximizing GPU utilization across teams."
+    }
+  }],
+  "usage": {
+    "prompt_tokens": 12,
+    "completion_tokens": 28,
+    "total_tokens": 40
+  }
+}
+--
+
+You have successfully deployed and published a model as a MaaS endpoint!
+
+== What's Next
+
+Now that your model is deployed, the next lab teaches you how to manage model versions and integrate deployments into GitOps pipelines for production lifecycle management.
+
+////
+Section from course design:
+Deploy a model (using the NVIDIA-Nemotron-3-Nano-4B-FP8 as the standard lab model) transitioning from single-node vLLM to the distributed llm-d runtime. Select "Publish as MaaS endpoint" to expose the model. Learn how to properly instrument model endpoints and enforce access controls.
+////

@@ -1,0 +1,81 @@
+:time_estimate: 10
+
+= Quiz: Model Selection Criteria
+
+_Estimated reading time: *{time_estimate} minutes*._
+
+Objective::
+
+Test understanding of model selection criteria through a knowledge check covering context length limitations, tool calling considerations, and choosing the right model type for specific workloads.
+
+== Knowledge Check
+
+Answer the following questions to test your understanding of model selection:
+
+1. **Which model architecture typically provides higher throughput per GPU?**
+   a. Dense models (all parameters active)
+   b. Sparse models (Mixture of Experts)
+   c. Both provide identical throughput
+   d. It depends only on batch size
+
+2. **What is the primary advantage of reasoning models?**
+   a. Faster inference speed
+   b. Lower cost per query
+   c. Better performance on complex tasks requiring multi-step thinking
+   d. Smaller memory footprint
+
+3. **A customer needs a chatbot for simple product recommendations with <5 second response time. Which model type is most appropriate?**
+   a. Reasoning model (for accuracy)
+   b. Non-reasoning model (for speed and cost)
+   c. Sparse Mixture of Experts
+   d. The largest available model
+
+4. **What is a key consideration when deploying Mixture of Experts models?**
+   a. They require less total GPU memory than dense models
+   b. They need complex expert sharding across GPUs
+   c. They always provide lower latency
+   d. They cannot be quantized
+
+5. **Context length primarily affects:**
+   a. Model accuracy only
+   b. GPU memory requirements for KV cache
+   c. Model training time
+   d. Number of parameters in the model
+
+6. **When would you choose a dense model over a sparse model?**
+   a. When you need maximum throughput
+   b. When you want predictable latency and simpler deployment
+   c. When serving millions of requests per day
+   d. When you have unlimited GPU resources
+
+7. **Tool calling capability in models is most important for:**
+   a. Simple text generation tasks
+   b. Agentic workflows that need to interact with external APIs and databases
+   c. Reducing inference costs
+   d. Improving model accuracy
+
+8. **If a reasoning model generates 800 tokens per query and a non-reasoning model generates 150 tokens, the reasoning model will:**
+   a. Have the same total latency
+   b. Occupy the GPU ~5x longer per request
+   c. Be faster due to better optimization
+   d. Use less memory
+
+=== Answer Key
+
+1. **b** - Sparse (MoE) models provide higher throughput by activating fewer parameters per token
+2. **c** - Reasoning models excel at complex, multi-step tasks despite higher cost
+3. **b** - Non-reasoning model provides fast, cost-effective responses for simple tasks
+4. **b** - MoE models require careful expert sharding across GPUs for optimal performance
+5. **b** - Longer context requires more GPU memory for the KV cache
+6. **b** - Dense models offer predictable latency and are easier to deploy
+7. **b** - Tool calling enables models to act as agents interacting with external systems
+8. **b** - More tokens means longer generation time and GPU occupation
+
+== What's Next
+
+Now that you've validated your model selection knowledge, the next chapter teaches you how to deploy models for MaaS using the distributed llm-d runtime, publish them as governed endpoints, and manage their lifecycle.
+
+////
+Section from course design:
+Test understanding of model selection criteria through a knowledge check covering context length limitations, tool calling considerations, and choosing the right model type for specific workloads.
+////

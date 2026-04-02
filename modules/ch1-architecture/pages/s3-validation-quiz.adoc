@@ -1,0 +1,67 @@
+:time_estimate: 10
+
+= Quiz: Architecture Validation
+
+_Estimated reading time: *{time_estimate} minutes*._
+
+Objective::
+
+Test recall of architectural layers and components through a knowledge check quiz covering the GPU Silo problem, MaaS governance benefits, and the foundational GPU operator stack.
+
+== Knowledge Check
+
+Answer the following questions to test your understanding of MaaS architecture:
+
+1. **What is the primary problem that MaaS solves?**
+   a. Slow model inference speeds
+   b. GPU hardware trapped in silos leading to idle capacity and bottlenecks
+   c. Lack of AI models in the organization
+   d. Difficulty deploying containers
+
+2. **Which component is responsible for rate limiting in the MaaS architecture?**
+   a. KServe
+   b. Gateway API
+   c. Limitador (part of Kuadrant)
+   d. NVIDIA GPU Operator
+
+3. **What is the role of the NVIDIA GPU Operator in MaaS?**
+   a. Provides model serving capabilities
+   b. Manages API authentication
+   c. Provides foundational GPU drivers, DCGM, container toolkit, and MIG management
+   d. Handles rate limiting
+
+4. **Which component provides the model serving framework?**
+   a. Kuadrant
+   b. KServe
+   c. Authorino
+   d. Gateway API
+
+5. **What does Authorino (part of Kuadrant) provide?**
+   a. GPU driver management
+   b. Model versioning
+   c. JWT validation and authentication
+   d. Container orchestration
+
+6. **Which layer sits at the foundation of the MaaS architecture?**
+   a. MaaS Governance Layer
+   b. Foundational Accelerator Enablement (GPU Operator)
+   c. Application Layer
+   d. Network Layer
+
+=== Answer Key
+
+1. **b** - MaaS solves the GPU Silo problem where expensive hardware is underutilized
+2. **c** - Limitador enforces rate limits based on service tiers
+3. **c** - GPU Operator provides the foundational GPU infrastructure
+4. **b** - KServe is the Kubernetes-native model serving framework
+5. **c** - Authorino handles JWT validation and authentication
+6. **b** - The GPU Operator layer forms the foundation
+
+== What's Next
+
+Now that you've validated your understanding of MaaS architecture, the next chapter guides you through configuring the MaaS platform, installing ecosystem operators, and enabling the MaaS component in OpenShift AI.
+
+////
+Section from course design:
+Test recall of architectural layers and components through a knowledge check quiz covering the GPU Silo problem, MaaS governance benefits, and the foundational GPU operator stack.
+////

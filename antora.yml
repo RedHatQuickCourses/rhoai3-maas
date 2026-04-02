@@ -1,6 +1,11 @@
 name: rhoai3-maas
 title: Models as a Service (MaaS) on Red Hat OpenShift AI 3.x
-version: 3.2
+version: 3.4
 nav:
 - modules/ROOT/nav.adoc
-- modules/chapter1/nav.adoc
+- modules/ch1-architecture/nav.adoc
+- modules/ch2-configuration/nav.adoc
+- modules/ch3-model-selection/nav.adoc
+- modules/ch4-deployment/nav.adoc
+- modules/ch5-observability/nav.adoc
+- modules/ch6-consumption/nav.adoc

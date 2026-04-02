@@ -1,8 +1,73 @@
-= Making Models as a Service (MaaS) Work for You
+= Red Hat AI Training: Models-as-a-Service (MaaS)
 :navtitle: Home
-:toc: macro
 
-// This page includes the chapter1 content to serve as the homepage
-// The ROOT module is used for the component index page
+== Goal
 
-include::chapter1:index.adoc[]
+To equip architects, engineers, and administrators with the knowledge and skills required to design, configure, deploy, and monitor a robust Models as a Service (MaaS) solution using Red Hat OpenShift AI 3.4. By the end of this training, participants will understand the strict boundaries around serving, resource management, access, and lifecycle. You will learn to govern a scalable MaaS ecosystem, transforming isolated GPUs into a fairly scheduled, multi-tenant shared service.
+
+== Objectives
+
+On completing this course, you should be able to:
+
+* Design a MaaS Architecture - Understand the "GPU Silo" crisis and map the architectural layers including KServe, Kuadrant, and Gateway API, as well as the foundational GPU strategy using the NVIDIA GPU Operator stack.
+
+* Configure the MaaS Platform and Ecosystem - Enable MaaS by updating the DataScienceCluster CR to Managed, install necessary ecosystem operators, and configure access controls and rate limits for service tiers.
+
+* Formulate a Model Selection Strategy - Evaluate models based on architecture (dense vs. sparse), capabilities (reasoning vs. non-reasoning), context length, and tool calling considerations.
+
+* Deploy Models for MaaS - Deploy models transitioning from single-node vLLM to distributed llm-d runtime, publish as MaaS endpoints, instrument endpoints, and integrate into GitOps pipelines.
+
+* Track Metrics and Usage - Utilize Prometheus and Grafana to visualize token counts, request rates, latency metrics (TTFT, TPOT), and connect hardware-level data to establish chargeback models.
+
+* Consume MaaS Endpoints and Agentic Integrations - Generate API keys, consume models using OpenAI-compatible REST API endpoints, and connect published endpoints to downstream applications like OpenShift DevSpaces.
+
+== Audience
+
+This course is designed for:
+
+* **Platform Engineers**: Responsible for designing and deploying model serving environments, enabling MaaS, defining service tiers, and deploying governed models.
+
+* **Developers**: Responsible for generating API keys, connecting applications to OpenAI-compatible REST endpoints, and integrating code assistants.
+
+* **DevOps / SREs**: Focused on observability, diagnostics, operational scale, tracking consumption metrics, cost allocation, and utilizing agentic AI for cluster operations.
+
+== Prerequisites
+
+This course assumes that you have the following experience:
+
+* Familiarity with Kubernetes and Red Hat OpenShift Container Platform.
+
+* Basic understanding of machine learning concepts and Red Hat OpenShift AI.
+
+* Basic networking, routing, and understanding of Kubernetes operators.
+
+* Familiarity with REST APIs and Prometheus/Grafana observability.
+
+== Classroom environment
+
+This course requires significant hardware acceleration (GPUs) in the lab environment. Cluster environments must be capable of supporting distributed inference (llm-d), meaning multi-GPU node availability is required for the deployment labs.
+
+IMPORTANT: MaaS is currently a Technology Preview Feature in Red Hat OpenShift AI 3.4, meant for early access and testing, with no SLAs or official support yet.
+
+== Products and Technologies
+
+This course uses the following products and technologies:
+
+* Red Hat OpenShift Container Platform (4.20+)
+* Red Hat OpenShift AI 3.4
+* Red Hat Connectivity Link (Kuadrant: Authorino, Limitador)
+* KServe & Gateway API
+* llm-d and vLLM serving runtimes
+* Ecosystem Operators (NFD, Cert-Manager, Kueue, Leader Worker Set)
+
+== Other sources of information about Red Hat OpenShift AI
+
+For documentation about Red Hat OpenShift AI, see the https://docs.redhat.com/en/documentation/red_hat_openshift_ai_self-managed/3.4[product documentation^].
+
+== Authors
+
+*Subject Matter Experts*:
+
+* Taylor Smith
+* James Harmison
+* Jonathan Zarecki (PM - consulted)
