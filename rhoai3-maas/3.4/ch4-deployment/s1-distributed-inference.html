@@ -359,17 +359,39 @@ Not started yet.
 <p><strong>PagedAttention Memory Management:</strong></p>
 </div>
 <div class="paragraph">
-<p>Traditional inference engines allocate contiguous memory for KV cache, leading to:
-* Memory fragmentation
-* Wasted capacity
-* Fixed batch sizes</p>
+<p>Traditional inference engines allocate contiguous memory for KV cache, leading to:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Memory fragmentation</p>
+</li>
+<li>
+<p>Wasted capacity</p>
+</li>
+<li>
+<p>Fixed batch sizes</p>
+</li>
+</ul>
 </div>
 <div class="paragraph">
-<p>vLLM&#8217;s PagedAttention:
-* Allocates KV cache in non-contiguous pages
-* Eliminates fragmentation
-* Enables dynamic batching
-* Increases GPU memory utilization by 2-4x</p>
+<p>vLLM&#8217;s PagedAttention:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Allocates KV cache in non-contiguous pages</p>
+</li>
+<li>
+<p>Eliminates fragmentation</p>
+</li>
+<li>
+<p>Enables dynamic batching</p>
+</li>
+<li>
+<p>Increases GPU memory utilization by 2-4x</p>
+</li>
+</ul>
 </div>
 <div class="paragraph">
 <p><strong>Example:</strong></p>
@@ -386,20 +408,48 @@ vLLM PagedAttention: 80-90% memory utilization</code></pre>
 <h2 id="_architecture_control_plane_vs_execution_plane"><a class="anchor" href="#_architecture_control_plane_vs_execution_plane"></a>Architecture: Control Plane vs. Execution Plane</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p><strong>Control Plane (llm-d):</strong>
-* Request routing and scheduling
-* Cache affinity decisions
-* Health monitoring
-* Metrics aggregation
-* Autoscaling decisions</p>
+<p><strong>Control Plane (llm-d):</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Request routing and scheduling</p>
+</li>
+<li>
+<p>Cache affinity decisions</p>
+</li>
+<li>
+<p>Health monitoring</p>
+</li>
+<li>
+<p>Metrics aggregation</p>
+</li>
+<li>
+<p>Autoscaling decisions</p>
+</li>
+</ul>
 </div>
 <div class="paragraph">
-<p><strong>Execution Plane (vLLM workers):</strong>
-* Actual model inference
-* GPU memory management
-* Token generation
-* KV cache management
-* Metrics reporting</p>
+<p><strong>Execution Plane (vLLM workers):</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Actual model inference</p>
+</li>
+<li>
+<p>GPU memory management</p>
+</li>
+<li>
+<p>Token generation</p>
+</li>
+<li>
+<p>KV cache management</p>
+</li>
+<li>
+<p>Metrics reporting</p>
+</li>
+</ul>
 </div>
 </div>
 </div>

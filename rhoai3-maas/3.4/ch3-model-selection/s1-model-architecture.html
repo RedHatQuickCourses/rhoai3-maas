@@ -229,25 +229,61 @@ Not started yet.
 <p>Dense models use all parameters for every inference operation.</p>
 </div>
 <div class="paragraph">
-<p><strong>Characteristics:</strong>
-* Every parameter is active for every token
-* Predictable memory footprint
-* Consistent inference latency
-* Simpler deployment architecture</p>
+<p><strong>Characteristics:</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Every parameter is active for every token</p>
+</li>
+<li>
+<p>Predictable memory footprint</p>
+</li>
+<li>
+<p>Consistent inference latency</p>
+</li>
+<li>
+<p>Simpler deployment architecture</p>
+</li>
+</ul>
 </div>
 <div class="paragraph">
-<p><strong>Examples:</strong>
-* GPT-3, GPT-4
-* Llama 2, Llama 3
-* Mistral 7B
-* Most traditional transformer models</p>
+<p><strong>Examples:</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>GPT-3, GPT-4</p>
+</li>
+<li>
+<p>Llama 2, Llama 3</p>
+</li>
+<li>
+<p>Mistral 7B</p>
+</li>
+<li>
+<p>Most traditional transformer models</p>
+</li>
+</ul>
 </div>
 <div class="paragraph">
-<p><strong>GPU Impact:</strong>
-* Memory usage = model size + KV cache + activations
-* For a 7B parameter model in FP16: ~14GB base memory
-* Additional memory for batch processing and KV cache
-* Memory bandwidth is the primary bottleneck</p>
+<p><strong>GPU Impact:</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Memory usage = model size + KV cache + activations</p>
+</li>
+<li>
+<p>For a 7B parameter model in FP16: ~14GB base memory</p>
+</li>
+<li>
+<p>Additional memory for batch processing and KV cache</p>
+</li>
+<li>
+<p>Memory bandwidth is the primary bottleneck</p>
+</li>
+</ul>
 </div>
 </div>
 </div>
@@ -258,24 +294,58 @@ Not started yet.
 <p>Sparse models activate only a subset of parameters per token using a routing mechanism.</p>
 </div>
 <div class="paragraph">
-<p><strong>Characteristics:</strong>
-* Only a fraction of experts are active per token
-* More parameters with less compute per token
-* Variable latency depending on routing
-* Complex deployment with expert-parallelism</p>
+<p><strong>Characteristics:</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Only a fraction of experts are active per token</p>
+</li>
+<li>
+<p>More parameters with less compute per token</p>
+</li>
+<li>
+<p>Variable latency depending on routing</p>
+</li>
+<li>
+<p>Complex deployment with expert-parallelism</p>
+</li>
+</ul>
 </div>
 <div class="paragraph">
-<p><strong>Examples:</strong>
-* Mixtral 8x7B (47B total, ~13B active)
-* DBRX (132B total, ~36B active)
-* Grok-1 (314B total)</p>
+<p><strong>Examples:</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Mixtral 8x7B (47B total, ~13B active)</p>
+</li>
+<li>
+<p>DBRX (132B total, ~36B active)</p>
+</li>
+<li>
+<p>Grok-1 (314B total)</p>
+</li>
+</ul>
 </div>
 <div class="paragraph">
-<p><strong>GPU Impact:</strong>
-* Memory usage = all expert parameters + routing overhead
-* Compute = only active experts per token
-* Better throughput per GPU with efficient expert placement
-* Requires careful sharding across GPUs</p>
+<p><strong>GPU Impact:</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Memory usage = all expert parameters + routing overhead</p>
+</li>
+<li>
+<p>Compute = only active experts per token</p>
+</li>
+<li>
+<p>Better throughput per GPU with efficient expert placement</p>
+</li>
+<li>
+<p>Requires careful sharding across GPUs</p>
+</li>
+</ul>
 </div>
 </div>
 </div>
@@ -297,18 +367,42 @@ Not started yet.
 <h2 id="_choosing_the_right_architecture"><a class="anchor" href="#_choosing_the_right_architecture"></a>Choosing the Right Architecture</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p><strong>Use Dense Models When:</strong>
-* You need predictable latency
-* Simple deployment is preferred
-* Model size fits comfortably in GPU memory
-* You&#8217;re serving moderate traffic volumes</p>
+<p><strong>Use Dense Models When:</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>You need predictable latency</p>
+</li>
+<li>
+<p>Simple deployment is preferred</p>
+</li>
+<li>
+<p>Model size fits comfortably in GPU memory</p>
+</li>
+<li>
+<p>You&#8217;re serving moderate traffic volumes</p>
+</li>
+</ul>
 </div>
 <div class="paragraph">
-<p><strong>Use Sparse Models When:</strong>
-* You need maximum throughput per GPU
-* You can tolerate variable latency
-* You have infrastructure for expert-parallelism
-* Serving high traffic volumes justifies complexity</p>
+<p><strong>Use Sparse Models When:</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>You need maximum throughput per GPU</p>
+</li>
+<li>
+<p>You can tolerate variable latency</p>
+</li>
+<li>
+<p>You have infrastructure for expert-parallelism</p>
+</li>
+<li>
+<p>Serving high traffic volumes justifies complexity</p>
+</li>
+</ul>
 </div>
 </div>
 </div>
@@ -316,16 +410,36 @@ Not started yet.
 <h2 id="_hardware_implications"><a class="anchor" href="#_hardware_implications"></a>Hardware Implications</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p><strong>Dense Model Example (Llama-2-70B):</strong>
-* Requires 140GB in FP16 (2 x A100 80GB)
-* Or 70GB in INT8 (1 x A100 80GB)
-* Predictable scaling with batch size</p>
+<p><strong>Dense Model Example (Llama-2-70B):</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Requires 140GB in FP16 (2 x A100 80GB)</p>
+</li>
+<li>
+<p>Or 70GB in INT8 (1 x A100 80GB)</p>
+</li>
+<li>
+<p>Predictable scaling with batch size</p>
+</li>
+</ul>
 </div>
 <div class="paragraph">
-<p><strong>Sparse Model Example (Mixtral 8x7B):</strong>
-* Requires 94GB for all experts (2 x A100 80GB)
-* Active compute equivalent to ~13B dense model
-* 3-4x throughput compared to dense 13B model</p>
+<p><strong>Sparse Model Example (Mixtral 8x7B):</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Requires 94GB for all experts (2 x A100 80GB)</p>
+</li>
+<li>
+<p>Active compute equivalent to ~13B dense model</p>
+</li>
+<li>
+<p>3-4x throughput compared to dense 13B model</p>
+</li>
+</ul>
 </div>
 </div>
 </div>
