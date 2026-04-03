@@ -15,6 +15,7 @@ WARNING: Not started yet.
 Reasoning models use chain-of-thought techniques and extended inference time to improve answer quality.
 
 **Characteristics:**
+
 * Generate intermediate reasoning steps
 * Higher token output per query (reasoning tokens + answer)
 * Slower time-to-first-token (TTFT)
@@ -22,12 +23,14 @@ Reasoning models use chain-of-thought techniques and extended inference time to 
 * Often use techniques like self-reflection or verification
 
 **Examples:**
+
 * OpenAI o1, o1-mini
 * Google Gemini Deep Research
 * Anthropic Claude 3 Opus (with extended thinking)
 * QwQ-32B-Preview
 
 **Use Cases:**
+
 * Complex problem-solving (math, coding, logic)
 * Multi-step planning
 * Scientific analysis
@@ -39,6 +42,7 @@ Reasoning models use chain-of-thought techniques and extended inference time to 
 Standard language models that generate responses directly without explicit reasoning steps.
 
 **Characteristics:**
+
 * Direct answer generation
 * Lower token output per query
 * Faster time-to-first-token
@@ -46,12 +50,14 @@ Standard language models that generate responses directly without explicit reaso
 * More cost-effective at scale
 
 **Examples:**
+
 * Llama 3.1 70B
 * Mistral 7B
 * Granite 3.0
 * NVIDIA Nemotron
 
 **Use Cases:**
+
 * Content generation
 * Summarization
 * Translation
@@ -73,6 +79,7 @@ Standard language models that generate responses directly without explicit reaso
 == Workload Suitability
 
 **Reasoning Models Are Better For:**
+
 * Complex mathematical problems
 * Multi-step coding challenges
 * Scientific hypothesis generation
@@ -80,6 +87,7 @@ Standard language models that generate responses directly without explicit reaso
 * Tasks where accuracy justifies cost
 
 **Non-Reasoning Models Are Better For:**
+
 * High-throughput applications
 * Simple classification or extraction
 * Real-time chat applications
@@ -103,16 +111,19 @@ Many organizations deploy both model types:
 == GPU Resource Planning
 
 **Example Workload:**
+
 * 1000 requests/hour
 * Reasoning model: 500 tokens/request, 30 sec latency
 * Non-reasoning model: 100 tokens/request, 5 sec latency
 
 **Reasoning Model Cluster:**
+
 * Needs ~4 GPUs to handle load
 * Higher memory requirements
 * More expensive infrastructure
 
 **Non-Reasoning Model Cluster:**
+
 * Needs ~1 GPU to handle load
 * Lower memory requirements
 * Cost-effective at scale

@@ -14,10 +14,10 @@ WARNING: Not started yet.
 
 Large language models often exceed the memory capacity of a single GPU. Distributed inference enables:
 
-* Serving models larger than single-GPU memory
-* Higher throughput through parallel processing
-* Better resource utilization across GPU clusters
-* Prefix cache sharing across inference requests
+ * Serving models larger than single-GPU memory
+ * Higher throughput through parallel processing
+ * Better resource utilization across GPU clusters
+ * Prefix cache sharing across inference requests
 
 == llm-d: The Distributed Inference Orchestrator
 
@@ -27,7 +27,7 @@ llm-d is the control plane for distributed LLM inference in MaaS:
 
 **Key Capabilities:**
 
-1. **Intelligent Inference Scheduling**
+1. **Intelligent Inference Scheduling** 
    * Cache-aware routing based on request prefixes
    * Load balancing across worker pods
    * Queue depth monitoring
@@ -60,11 +60,13 @@ vLLM runs in worker pods and performs the actual inference:
 **PagedAttention Memory Management:**
 
 Traditional inference engines allocate contiguous memory for KV cache, leading to:
+
 * Memory fragmentation
 * Wasted capacity
 * Fixed batch sizes
 
 vLLM's PagedAttention:
+
 * Allocates KV cache in non-contiguous pages
 * Eliminates fragmentation
 * Enables dynamic batching
@@ -79,6 +81,7 @@ vLLM PagedAttention: 80-90% memory utilization
 == Architecture: Control Plane vs. Execution Plane
 
 **Control Plane (llm-d):**
+
 * Request routing and scheduling
 * Cache affinity decisions
 * Health monitoring
@@ -86,6 +89,7 @@ vLLM PagedAttention: 80-90% memory utilization
 * Autoscaling decisions
 
 **Execution Plane (vLLM workers):**
+
 * Actual model inference
 * GPU memory management
 * Token generation

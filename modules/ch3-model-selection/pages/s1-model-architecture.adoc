@@ -15,43 +15,49 @@ WARNING: Not started yet.
 Dense models use all parameters for every inference operation.
 
 **Characteristics:**
-* Every parameter is active for every token
-* Predictable memory footprint
-* Consistent inference latency
-* Simpler deployment architecture
+
+ * Every parameter is active for every token
+ * Predictable memory footprint
+ * Consistent inference latency
+ * Simpler deployment architecture
 
 **Examples:**
-* GPT-3, GPT-4
-* Llama 2, Llama 3
-* Mistral 7B
-* Most traditional transformer models
+
+ * GPT-3, GPT-4
+ * Llama 2, Llama 3
+ * Mistral 7B
+ * Most traditional transformer models
 
 **GPU Impact:**
-* Memory usage = model size + KV cache + activations
-* For a 7B parameter model in FP16: ~14GB base memory
-* Additional memory for batch processing and KV cache
-* Memory bandwidth is the primary bottleneck
+
+ * Memory usage = model size + KV cache + activations
+ * For a 7B parameter model in FP16: ~14GB base memory
+ * Additional memory for batch processing and KV cache
+ * Memory bandwidth is the primary bottleneck
 
 == Sparse Models (Mixture of Experts)
 
 Sparse models activate only a subset of parameters per token using a routing mechanism.
 
 **Characteristics:**
-* Only a fraction of experts are active per token
-* More parameters with less compute per token
-* Variable latency depending on routing
-* Complex deployment with expert-parallelism
+
+ * Only a fraction of experts are active per token
+ * More parameters with less compute per token
+ * Variable latency depending on routing
+ * Complex deployment with expert-parallelism
 
 **Examples:**
-* Mixtral 8x7B (47B total, ~13B active)
-* DBRX (132B total, ~36B active)
-* Grok-1 (314B total)
+
+ * Mixtral 8x7B (47B total, ~13B active)
+ * DBRX (132B total, ~36B active)
+ * Grok-1 (314B total)
 
 **GPU Impact:**
-* Memory usage = all expert parameters + routing overhead
-* Compute = only active experts per token
-* Better throughput per GPU with efficient expert placement
-* Requires careful sharding across GPUs
+
+ * Memory usage = all expert parameters + routing overhead
+ * Compute = only active experts per token
+ * Better throughput per GPU with efficient expert placement
+ * Requires careful sharding across GPUs
 
 == Performance Comparison
 
@@ -66,28 +72,32 @@ Sparse models activate only a subset of parameters per token using a routing mec
 == Choosing the Right Architecture
 
 **Use Dense Models When:**
-* You need predictable latency
-* Simple deployment is preferred
-* Model size fits comfortably in GPU memory
-* You're serving moderate traffic volumes
+
+ * You need predictable latency
+ * Simple deployment is preferred
+ * Model size fits comfortably in GPU memory
+ * You're serving moderate traffic volumes
 
 **Use Sparse Models When:**
-* You need maximum throughput per GPU
-* You can tolerate variable latency
-* You have infrastructure for expert-parallelism
-* Serving high traffic volumes justifies complexity
+
+ * You need maximum throughput per GPU
+ * You can tolerate variable latency
+ * You have infrastructure for expert-parallelism
+ * Serving high traffic volumes justifies complexity
 
 == Hardware Implications
 
 **Dense Model Example (Llama-2-70B):**
-* Requires 140GB in FP16 (2 x A100 80GB)
-* Or 70GB in INT8 (1 x A100 80GB)
-* Predictable scaling with batch size
+
+ * Requires 140GB in FP16 (2 x A100 80GB)
+ * Or 70GB in INT8 (1 x A100 80GB)
+ * Predictable scaling with batch size
 
 **Sparse Model Example (Mixtral 8x7B):**
-* Requires 94GB for all experts (2 x A100 80GB)
-* Active compute equivalent to ~13B dense model
-* 3-4x throughput compared to dense 13B model
+
+ * Requires 94GB for all experts (2 x A100 80GB)
+ * Active compute equivalent to ~13B dense model
+ * 3-4x throughput compared to dense 13B model
 
 == What's Next
 
