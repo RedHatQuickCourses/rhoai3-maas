@@ -89,7 +89,7 @@ The course teaches deployment on:
 - **OpenShift 4.x** with Red Hat OpenShift AI 3.x operator
 - **GPU nodes** (NVIDIA) for production workloads
 - **KServe** model serving platform
-- **Channel**: `fast-3.x` operator channel
+- **Channel**: `stable-3.3` operator channel
 
 ## Development Scripts
 
